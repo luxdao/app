@@ -1,2 +1,0 @@
-import{g as i,b as t,i as n,s as c,C as f}from"./index-DH50H2W-.js";const m=e=>{if(e.length===0)return;const a=[];for(const r of e){const[o,s]=r.split(":");!o||!s||n(s)&&a.push({networkPrefix:o,address:s,name:""})}c({cacheName:t.FAVORITES},a,f.NEVER),localStorage.removeItem(JSON.stringify({cacheName:t.FAVORITES,version:1}))};function g(){const e=i({cacheName:t.FAVORITES},1)||[];m(e)}export{g as default};
-//# sourceMappingURL=3-Bx3stp8L.js.map

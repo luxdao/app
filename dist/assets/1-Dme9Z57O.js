@@ -1,2 +1,0 @@
-import{a as c,s as i,C as l,b as n}from"./index-DH50H2W-.js";const f=e=>{e.forEach(a=>{localStorage.removeItem(a)})},u=e=>{if(e.length===0)return;const a=[];for(const t of e){const[,r]=t.split("_");if(Number.isNaN(Number(r)))continue;const o=localStorage.getItem(t);o&&JSON.parse(o).v.forEach(s=>{a.push(c(s,Number(r)))})}i({cacheName:n.FAVORITES},a,l.NEVER)};function m(){const e=Object.keys(localStorage).filter(t=>t.startsWith("fract_")),a=e.filter(t=>t.endsWith("favorites"));u(a),f(e)}export{m as default};
-//# sourceMappingURL=1-Dme9Z57O.js.map
