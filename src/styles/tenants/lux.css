@@ -1,0 +1,18 @@
+/*
+ * Lux DAO Default Theme
+ * Pure monochrome - black and white
+ *
+ * This is the default tenant theme.
+ * Other tenants can override these variables.
+ */
+
+:root {
+  /* Lux uses the default monochrome theme from globals.css */
+  /* No overrides needed for the default tenant */
+}
+
+/* Optional: Lux-specific brand accents */
+.lux-brand {
+  /* Lux triangle logo color if needed */
+  --lux-accent: 0 0% 9%;
+}

@@ -1,0 +1,1904 @@
+import { abis, legacy } from '@luxdao/contracts';
+import {
+  checkAndEncodeArgs,
+  HATS_MODULES_FACTORY_ABI,
+  HATS_MODULES_FACTORY_ADDRESS,
+  HatsModulesClient,
+} from '@hatsprotocol/modules-sdk';
+import { FormikHelpers } from 'formik';
+import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import {
+  Address,
+  encodeAbiParameters,
+  encodeFunctionData,
+  encodePacked,
+  getAddress,
+  getContract,
+  getCreate2Address,
+  Hex,
+  keccak256,
+  parseAbiParameters,
+  zeroAddress,
+} from 'viem';
+import GnosisSafeL2 from '../../assets/abi/GnosisSafeL2';
+import { HatsAbi } from '../../assets/abi/HatsAbi';
+import HatsAccount1ofNAbi from '../../assets/abi/HatsAccount1ofN';
+import { HatsElectionsEligibilityAbi } from '../../assets/abi/HatsElectionsEligibilityAbi';
+import { ModuleProxyFactoryAbi } from '../../assets/abi/ModuleProxyFactoryAbi';
+import { ROLES } from '../../constants/accessControlRoles';
+import { ERC6551_REGISTRY_SALT } from '../../constants/common';
+import {
+  linearERC20VotingWithWhitelistSetupParams,
+  linearERC20VotingWithWhitelistV1SetupParams,
+  linearERC721VotingWithWhitelistSetupParams,
+  linearERC721VotingWithWhitelistV1SetupParams,
+} from '../../constants/params';
+import { DAO_ROUTES } from '../../constants/routes';
+import { getRandomBytes } from '../../helpers';
+import useFeatureFlag from '../../helpers/environmentFeatureFlags';
+import { generateContractByteCodeLinear } from '../../models/helpers/utils';
+import { useDAOStore } from '../../providers/App/AppProvider';
+import useIPFSClient from '../../providers/App/hooks/useIPFSClient';
+import { useNetworkConfigStore } from '../../providers/NetworkConfig/useNetworkConfigStore';
+import { useRolesStore } from '../../store/roles/useRolesStore';
+import {
+  GovernorGovernance,
+  CreateProposalMetadata,
+  GovernanceType,
+  ProposalActionType,
+  ProposalExecuteData,
+} from '../../types';
+import {
+  EditBadgeStatus,
+  RoleStruct,
+  RoleStructWithPayments,
+  RoleFormValues,
+  RoleFormValueEdited,
+  SablierPaymentFormValues,
+} from '../../types/roles';
+import { SENTINEL_MODULE } from '../../utils/address';
+import { prepareSendAssetsActionData } from '../../utils/dao/prepareSendAssetsActionData';
+import { getVoteSelectorAndValidator } from '../../utils/gaslessVoting';
+import useSubmitProposal from '../DAO/proposal/useSubmitProposal';
+import { useCurrentDAOKey } from '../DAO/useCurrentDAOKey';
+import useLockedToken from '../DAO/useLockedToken';
+import useCreateSablierStream from '../streams/useCreateSablierStream';
+import useNetworkPublicClient from '../useNetworkPublicClient';
+import {
+  isElectionEligibilityModule,
+  predictAccountAddress,
+  predictHatId,
+} from './../../store/roles/rolesStoreUtils';
+
+function hatsDetailsBuilder(data: { name: string; description: string }) {
+  return JSON.stringify({
+    type: '1.0',
+    data,
+  });
+}
+
+async function uploadHatDescription(
+  hatDescription: string,
+  ipfsClient: {
+    cat: (hash: string) => Promise<any>;
+    add: (data: string) => Promise<any>;
+  },
+) {
+  const response = await ipfsClient.add(hatDescription);
+  return `ipfs://${response.Hash}`;
+}
+
+export default function useCreateRoles() {
+  const { daoKey } = useCurrentDAOKey();
+  const {
+    governance,
+    governanceContracts: {
+      linearVotingErc20Address,
+      linearVotingErc20WithRolesWhitelistingAddress,
+      linearVotingErc721Address,
+      linearVotingErc721WithRolesWhitelistingAddress,
+      moduleGovernorAddress,
+    },
+    node: { safe, subgraphInfo },
+    governance: { gaslessVotingEnabled, paymasterAddress },
+  } = useDAOStore({ daoKey });
+  const { rolesTree, rolesTreeId, getHat } = useRolesStore();
+  const {
+    addressPrefix,
+    chain,
+    contracts: {
+      rolesProtocol,
+      daoRolesCreationModule,
+      daoRolesModificationModule,
+      rolesAccount1ofNMasterCopy,
+      erc6551Registry,
+      keyValuePairs,
+      sablierV2LockupLinear,
+      linearVotingErc20RolesWhitelistingMasterCopy,
+      linearVotingErc20RolesWhitelistingV1MasterCopy,
+      linearVotingErc721RolesWhitelistingMasterCopy,
+      linearVotingErc721RolesWhitelistingV1MasterCopy,
+      moduleProxyFactory,
+      daoAutonomousAdminV1MasterCopy,
+      rolesElectionsEligibilityMasterCopy,
+      paymaster,
+      accountAbstraction,
+    },
+  } = useNetworkConfigStore();
+  const { loadTokenState } = useLockedToken();
+
+  const { t } = useTranslation(['roles', 'navigation', 'modals', 'common']);
+
+  const safeAddress = safe?.address;
+
+  const { submitProposal } = useSubmitProposal();
+  const { prepareBatchLinearStreamCreation, prepareFlushStreamTxs, prepareCancelStreamTxs } =
+    useCreateSablierStream();
+  const ipfsClient = useIPFSClient();
+  const publicClient = useNetworkPublicClient();
+  const navigate = useNavigate();
+
+  const gaslessVotingFeatureEnabled = useFeatureFlag('flag_gasless_voting');
+
+  const buildDeployWhitelistingStrategy = useCallback(
+    async (whitelistedRoleIds: bigint[]) => {
+      if (!safeAddress || !moduleGovernorAddress) {
+        return;
+      }
+      const governorGovernance = governance as GovernorGovernance;
+      const { votingStrategy, votesToken, erc721Tokens } = governorGovernance;
+
+      if (!governorGovernance.type) {
+        throw new Error('Governance type is not set');
+      }
+
+      const { voteSelector, voteValidator } = getVoteSelectorAndValidator(
+        governorGovernance.type,
+        paymaster,
+      );
+
+      if (governorGovernance.type === GovernanceType.GOVERNOR_ERC20) {
+        if (!votesToken || !votingStrategy?.quorumPercentage || !linearVotingErc20Address) {
+          return;
+        }
+
+        const existingAbiAndAddress = {
+          abi: legacy.abis.LinearERC20Voting,
+          address: linearVotingErc20Address,
+        };
+
+        const [existingVotingPeriod, existingQuorumNumerator, existingBasisNumerator] =
+          await publicClient.multicall({
+            contracts: [
+              {
+                ...existingAbiAndAddress,
+                functionName: 'votingPeriod',
+              },
+              {
+                ...existingAbiAndAddress,
+                functionName: 'quorumNumerator',
+              },
+              {
+                ...existingAbiAndAddress,
+                functionName: 'basisNumerator',
+              },
+            ],
+            allowFailure: false,
+          });
+
+        const encodedStrategyInitParams =
+          gaslessVotingFeatureEnabled && accountAbstraction
+            ? encodeAbiParameters(parseAbiParameters(linearERC20VotingWithWhitelistV1SetupParams), [
+                safeAddress, // owner
+                votesToken.address, // governance token
+                moduleGovernorAddress, // Governor module
+                existingVotingPeriod,
+                existingQuorumNumerator,
+                existingBasisNumerator,
+                rolesProtocol,
+                whitelistedRoleIds,
+                accountAbstraction.lightAccountFactory,
+              ])
+            : encodeAbiParameters(parseAbiParameters(linearERC20VotingWithWhitelistSetupParams), [
+                safeAddress, // owner
+                votesToken.address, // governance token
+                moduleGovernorAddress, // Governor module
+                existingVotingPeriod,
+                existingQuorumNumerator,
+                existingBasisNumerator,
+                rolesProtocol,
+                whitelistedRoleIds,
+              ]);
+
+        const encodedStrategySetupData = encodeFunctionData({
+          abi: legacy.abis.LinearERC20VotingWithHatsProposalCreation,
+          functionName: 'setUp',
+          args: [encodedStrategyInitParams],
+        });
+
+        const strategyMasterCopy = gaslessVotingFeatureEnabled
+          ? linearVotingErc20RolesWhitelistingV1MasterCopy
+          : linearVotingErc20RolesWhitelistingMasterCopy;
+
+        const strategyNonce = getRandomBytes();
+        const deployWhitelistingVotingStrategyTx = {
+          calldata: encodeFunctionData({
+            abi: ModuleProxyFactoryAbi,
+            functionName: 'deployModule',
+            args: [strategyMasterCopy, encodedStrategySetupData, strategyNonce],
+          }),
+          targetAddress: moduleProxyFactory,
+        };
+
+        const strategyByteCodeLinear = generateContractByteCodeLinear(strategyMasterCopy);
+
+        const strategySalt = keccak256(
+          encodePacked(
+            ['bytes32', 'uint256'],
+            [keccak256(encodePacked(['bytes'], [encodedStrategySetupData])), strategyNonce],
+          ),
+        );
+
+        const predictedStrategyAddress = getCreate2Address({
+          from: moduleProxyFactory,
+          salt: strategySalt,
+          bytecodeHash: keccak256(encodePacked(['bytes'], [strategyByteCodeLinear])),
+        });
+
+        const enableDeployedVotingStrategyTx = {
+          targetAddress: moduleGovernorAddress,
+          calldata: encodeFunctionData({
+            abi: legacy.abis.Governor,
+            functionName: 'enableStrategy',
+            args: [predictedStrategyAddress],
+          }),
+        };
+
+        const optionallyWhitelistWhitelistingStrategyOnPaymaster = [];
+        if (gaslessVotingEnabled && paymasterAddress) {
+          optionallyWhitelistWhitelistingStrategyOnPaymaster.push({
+            calldata: encodeFunctionData({
+              abi: legacy.abis.DAOPaymasterV1,
+              functionName: 'setFunctionValidator',
+              args: [predictedStrategyAddress, voteSelector, voteValidator],
+            }),
+            targetAddress: paymasterAddress,
+          });
+        }
+        return [
+          deployWhitelistingVotingStrategyTx,
+          enableDeployedVotingStrategyTx,
+          ...optionallyWhitelistWhitelistingStrategyOnPaymaster,
+        ];
+      } else if (governorGovernance.type === GovernanceType.GOVERNOR_ERC721) {
+        if (!erc721Tokens || !votingStrategy?.quorumThreshold || !linearVotingErc721Address) {
+          return;
+        }
+
+        const existingAbiAndAddress = {
+          abi: legacy.abis.LinearERC721Voting,
+          address: linearVotingErc721Address,
+        };
+
+        const [existingVotingPeriod, existingQuorumThreshold, existingBasisNumerator] =
+          await publicClient.multicall({
+            contracts: [
+              {
+                ...existingAbiAndAddress,
+                functionName: 'votingPeriod',
+              },
+              {
+                ...existingAbiAndAddress,
+                functionName: 'quorumThreshold',
+              },
+              {
+                ...existingAbiAndAddress,
+                functionName: 'basisNumerator',
+              },
+            ],
+            allowFailure: false,
+          });
+
+        const encodedStrategyInitParams =
+          gaslessVotingFeatureEnabled && accountAbstraction
+            ? encodeAbiParameters(
+                parseAbiParameters(linearERC721VotingWithWhitelistV1SetupParams),
+                [
+                  safeAddress, // owner
+                  erc721Tokens.map(token => token.address), // governance tokens addresses
+                  erc721Tokens.map(token => token.votingWeight), // governance tokens weights
+                  moduleGovernorAddress, // Governor module
+                  existingVotingPeriod,
+                  existingQuorumThreshold,
+                  existingBasisNumerator,
+                  rolesProtocol,
+                  whitelistedRoleIds,
+                  accountAbstraction.lightAccountFactory,
+                ],
+              )
+            : encodeAbiParameters(parseAbiParameters(linearERC721VotingWithWhitelistSetupParams), [
+                safeAddress, // owner
+                erc721Tokens.map(token => token.address), // governance tokens addresses
+                erc721Tokens.map(token => token.votingWeight), // governance tokens weights
+                moduleGovernorAddress, // Governor module
+                existingVotingPeriod,
+                existingQuorumThreshold,
+                existingBasisNumerator,
+                rolesProtocol,
+                whitelistedRoleIds,
+              ]);
+
+        const encodedStrategySetupData = encodeFunctionData({
+          abi: legacy.abis.LinearERC721VotingWithHatsProposalCreation,
+          functionName: 'setUp',
+          args: [encodedStrategyInitParams],
+        });
+
+        const strategyMasterCopy = gaslessVotingFeatureEnabled
+          ? linearVotingErc721RolesWhitelistingV1MasterCopy
+          : linearVotingErc721RolesWhitelistingMasterCopy;
+
+        const strategyNonce = getRandomBytes();
+        const deployWhitelistingVotingStrategyTx = {
+          calldata: encodeFunctionData({
+            abi: ModuleProxyFactoryAbi,
+            functionName: 'deployModule',
+            args: [strategyMasterCopy, encodedStrategySetupData, strategyNonce],
+          }),
+          targetAddress: moduleProxyFactory,
+        };
+
+        const strategyByteCodeLinear = generateContractByteCodeLinear(strategyMasterCopy);
+
+        const strategySalt = keccak256(
+          encodePacked(
+            ['bytes32', 'uint256'],
+            [keccak256(encodePacked(['bytes'], [encodedStrategySetupData])), strategyNonce],
+          ),
+        );
+
+        const predictedStrategyAddress = getCreate2Address({
+          from: moduleProxyFactory,
+          salt: strategySalt,
+          bytecodeHash: keccak256(encodePacked(['bytes'], [strategyByteCodeLinear])),
+        });
+
+        const enableDeployedVotingStrategyTx = {
+          targetAddress: moduleGovernorAddress,
+          calldata: encodeFunctionData({
+            abi: legacy.abis.Governor,
+            functionName: 'enableStrategy',
+            args: [predictedStrategyAddress],
+          }),
+        };
+
+        const optionallyWhitelistWhitelistingStrategyOnPaymaster = [];
+        if (gaslessVotingEnabled && paymasterAddress) {
+          optionallyWhitelistWhitelistingStrategyOnPaymaster.push({
+            calldata: encodeFunctionData({
+              abi: legacy.abis.DAOPaymasterV1,
+              functionName: 'setFunctionValidator',
+              args: [predictedStrategyAddress, voteSelector, voteValidator],
+            }),
+            targetAddress: paymasterAddress,
+          });
+        }
+
+        return [
+          deployWhitelistingVotingStrategyTx,
+          enableDeployedVotingStrategyTx,
+          ...optionallyWhitelistWhitelistingStrategyOnPaymaster,
+        ];
+      } else {
+        throw new Error(
+          'Can not deploy Whitelisting Voting Strategy - unsupported governance type!',
+        );
+      }
+    },
+    [
+      safeAddress,
+      moduleGovernorAddress,
+      governance,
+      linearVotingErc20Address,
+      publicClient,
+      gaslessVotingFeatureEnabled,
+      accountAbstraction,
+      rolesProtocol,
+      linearVotingErc20RolesWhitelistingV1MasterCopy,
+      linearVotingErc20RolesWhitelistingMasterCopy,
+      moduleProxyFactory,
+      gaslessVotingEnabled,
+      paymasterAddress,
+      paymaster,
+      linearVotingErc721Address,
+      linearVotingErc721RolesWhitelistingV1MasterCopy,
+      linearVotingErc721RolesWhitelistingMasterCopy,
+    ],
+  );
+
+  const createRoleStruct = useCallback(
+    async (
+      name: string,
+      description: string,
+      wearer: Address,
+      isMutable: boolean,
+      termEndDateTs: bigint,
+    ): Promise<RoleStruct> => {
+      const details = await uploadHatDescription(
+        hatsDetailsBuilder({
+          name: name,
+          description: description,
+        }),
+        ipfsClient,
+      );
+
+      return {
+        maxSupply: 1,
+        details,
+        imageURI: '',
+        isMutable,
+        wearer,
+        termEndDateTs,
+      };
+    },
+    [ipfsClient],
+  );
+
+  const createRoleStructWithPayments = useCallback(
+    async (
+      name: string,
+      description: string,
+      wearer: Address,
+      payments: {
+        totalAmount: bigint;
+        asset: Address;
+        startTimestamp: number;
+        cliffTimestamp: number;
+        endTimestamp: number;
+        cancelable: boolean;
+      }[],
+      termEndDateTs: bigint,
+    ) => {
+      if (safeAddress === undefined) {
+        throw new Error('Can not create Hat Struct (with payments) without DAO Address');
+      }
+      // @dev if termEndDateTs is not 0, then the role is termed and is not mutable
+      const isMutable = termEndDateTs === BigInt(0);
+      const newHat = await createRoleStruct(name, description, wearer, isMutable, termEndDateTs);
+
+      const newHatWithPayments: RoleStructWithPayments = {
+        ...newHat,
+        sablierStreamsParams: payments.map(payment => ({
+          sablier: sablierV2LockupLinear,
+          sender: safeAddress,
+          totalAmount: payment.totalAmount,
+          asset: payment.asset,
+          cancelable: payment.cancelable,
+          transferable: true,
+          timestamps: {
+            start: payment.startTimestamp,
+            cliff: payment.cliffTimestamp,
+            end: payment.endTimestamp,
+          },
+          broker: { account: zeroAddress, fee: 0n },
+        })),
+      };
+
+      return newHatWithPayments;
+    },
+    [createRoleStruct, safeAddress, sablierV2LockupLinear],
+  );
+
+  const parseSablierPaymentsFromFormRolePayments = useCallback(
+    (payments: SablierPaymentFormValues[]) => {
+      return payments.map(payment => {
+        if (
+          !payment.amount?.bigintValue ||
+          !payment.asset ||
+          !payment.startDate ||
+          !payment.endDate
+        ) {
+          throw new Error('Missing required payment information');
+        }
+
+        return {
+          totalAmount: payment.amount.bigintValue,
+          asset: payment.asset.address,
+          startTimestamp: Math.floor(payment.startDate.getTime() / 1000),
+          cliffTimestamp: payment.cliffDate ? Math.floor(payment.cliffDate.getTime() / 1000) : 0,
+          endTimestamp: Math.floor(payment.endDate.getTime() / 1000),
+          cancelable: payment.cancelable,
+        };
+      });
+    },
+    [],
+  );
+  const parseRoleTermsFromFormRoleTerms = useCallback(
+    (formRoleTerms: { termEndDate?: Date; nominee?: string }[]) => {
+      return formRoleTerms
+        .map(term => {
+          if (term.termEndDate === undefined) {
+            throw new Error('Term end date of added Role is undefined.');
+          }
+          if (term.nominee === undefined) {
+            throw new Error('Nominee of added Role is undefined.');
+          }
+
+          return {
+            termEndDateTs: BigInt(term.termEndDate.getTime()) / 1000n,
+            nominatedWearers: [getAddress(term.nominee)],
+          };
+        })
+        .sort((a, b) => Number(b.termEndDateTs) - Number(a.termEndDateTs));
+    },
+    [],
+  );
+
+  const createWhitelistSablierTransactions = useCallback(
+    async (payments: SablierPaymentFormValues[]) => {
+      const sablierPayments = parseSablierPaymentsFromFormRolePayments(payments);
+      const sablierUniqueAssets = [...new Set(sablierPayments.map(sp => sp.asset))];
+      const isLinearWhitelistedOfStreams = await Promise.allSettled(
+        sablierUniqueAssets.map(asset => loadTokenState(asset, sablierV2LockupLinear)),
+      );
+      return sablierUniqueAssets
+        .filter((_, index) => {
+          return (
+            isLinearWhitelistedOfStreams[index].status === 'fulfilled' &&
+            isLinearWhitelistedOfStreams[index].value.needWhitelist
+          );
+        })
+        .map(asset => {
+          return {
+            targetAddress: asset,
+            calldata: encodeFunctionData({
+              abi: abis.deployables.VotesERC20V1,
+              functionName: 'grantRole',
+              args: [ROLES.TRANSFER_FROM_ROLE, sablierV2LockupLinear],
+            }),
+          };
+        });
+    },
+    [loadTokenState, parseSablierPaymentsFromFormRolePayments, sablierV2LockupLinear],
+  );
+
+  const createRoleStructsForNewTreeFromRolesFormValues = useCallback(
+    async (modifiedRoles: RoleFormValueEdited[]) => {
+      return Promise.all(
+        modifiedRoles.map(role => {
+          if (role.name === undefined || role.description === undefined) {
+            throw new Error('Hat name or description of added hat is undefined.');
+          }
+
+          const sablierPayments = parseSablierPaymentsFromFormRolePayments(role.payments);
+
+          const [firstTerm] = parseRoleTermsFromFormRoleTerms(role.roleTerms ?? []);
+          if (!firstTerm && role.isTermed) {
+            throw new Error('First term is undefined');
+          }
+
+          // @note for new termed roles, we set the first wearer to the first nominee
+          const termEndDateTs = role.isTermed ? firstTerm.termEndDateTs : BigInt(0);
+          let wearer: Address;
+          if (role.isTermed) {
+            wearer = firstTerm.nominatedWearers[0];
+          } else if (!role.isTermed && role.wearer) {
+            wearer = getAddress(role.wearer);
+          } else {
+            throw new Error('A wearer is required');
+          }
+
+          return createRoleStructWithPayments(
+            role.name,
+            role.description,
+            wearer,
+            sablierPayments,
+            termEndDateTs,
+          );
+        }),
+      );
+    },
+    [
+      createRoleStructWithPayments,
+      parseSablierPaymentsFromFormRolePayments,
+      parseRoleTermsFromFormRoleTerms,
+    ],
+  );
+
+  const predictSmartAccount = useCallback(
+    async (roleId: bigint) => {
+      return predictAccountAddress({
+        implementation: rolesAccount1ofNMasterCopy,
+        chainId: BigInt(chain.id),
+        tokenContract: rolesProtocol,
+        tokenId: roleId,
+        registryAddress: erc6551Registry,
+        publicClient,
+      });
+    },
+    [publicClient, rolesAccount1ofNMasterCopy, chain.id, rolesProtocol, erc6551Registry],
+  );
+
+  const getEnableDisableDAORolesModuleData = useCallback((moduleAddress: Address) => {
+    const enableDAORolesModuleData = encodeFunctionData({
+      abi: GnosisSafeL2,
+      functionName: 'enableModule',
+      args: [moduleAddress],
+    });
+
+    const disableDAORolesModuleData = encodeFunctionData({
+      abi: GnosisSafeL2,
+      functionName: 'disableModule',
+      args: [SENTINEL_MODULE, moduleAddress],
+    });
+
+    return { enableDAORolesModuleData, disableDAORolesModuleData };
+  }, []);
+
+  const prepareCreateTopHatProposalData = useCallback(
+    async (proposalMetadata: CreateProposalMetadata, modifiedRoles: RoleFormValueEdited[]) => {
+      if (!safeAddress) {
+        throw new Error('Can not create top hat without DAO Address');
+      }
+
+      const { enableDAORolesModuleData, disableDAORolesModuleData } =
+        getEnableDisableDAORolesModuleData(daoRolesCreationModule);
+
+      const topRole = {
+        details: await uploadHatDescription(
+          hatsDetailsBuilder({
+            name: subgraphInfo?.daoName || safeAddress,
+            description: '',
+          }),
+          ipfsClient,
+        ),
+        imageURI: '',
+      };
+
+      const adminRole = {
+        details: await uploadHatDescription(
+          hatsDetailsBuilder({
+            name: 'Admin',
+            description: '',
+          }),
+          ipfsClient,
+        ),
+        imageURI: '',
+        isMutable: true,
+      };
+
+      const whitelistSablierTxs = await createWhitelistSablierTransactions(
+        modifiedRoles.flatMap(mH => mH.payments),
+      );
+
+      const addedHats = await createRoleStructsForNewTreeFromRolesFormValues(modifiedRoles);
+      const createAndDeclareTreeData = encodeFunctionData({
+        abi: legacy.abis.DAOHatsCreationModule,
+        functionName: 'createAndDeclareTree',
+        args: [
+          {
+            rolesProtocol,
+            erc6551Registry,
+            hatsModuleFactory: HATS_MODULES_FACTORY_ADDRESS,
+            moduleProxyFactory: moduleProxyFactory,
+            keyValuePairs,
+            daoAutonomousAdminImplementation: daoAutonomousAdminV1MasterCopy,
+            rolesAccountImplementation: rolesAccount1ofNMasterCopy,
+            hatsElectionsEligibilityImplementation: rolesElectionsEligibilityMasterCopy,
+            topRole,
+            adminRole,
+            hats: addedHats,
+          },
+        ],
+      });
+
+      return {
+        targets: [
+          ...whitelistSablierTxs.map(({ targetAddress }) => targetAddress),
+          safeAddress,
+          daoRolesCreationModule,
+          safeAddress,
+        ],
+        calldatas: [
+          ...whitelistSablierTxs.map(({ calldata }) => calldata),
+          enableDAORolesModuleData,
+          createAndDeclareTreeData,
+          disableDAORolesModuleData,
+        ],
+        metaData: proposalMetadata,
+        values: [...whitelistSablierTxs.map(() => 0n), 0n, 0n, 0n],
+      };
+    },
+    [
+      safeAddress,
+      getEnableDisableDAORolesModuleData,
+      daoRolesCreationModule,
+      subgraphInfo?.daoName,
+      ipfsClient,
+      createWhitelistSablierTransactions,
+      createRoleStructsForNewTreeFromRolesFormValues,
+      rolesProtocol,
+      erc6551Registry,
+      moduleProxyFactory,
+      keyValuePairs,
+      daoAutonomousAdminV1MasterCopy,
+      rolesAccount1ofNMasterCopy,
+      rolesElectionsEligibilityMasterCopy,
+    ],
+  );
+
+  const prepareNewHatTxs = useCallback(
+    async (formRole: RoleFormValueEdited) => {
+      if (formRole.name === undefined || formRole.description === undefined) {
+        throw new Error('Role name or description is undefined.');
+      }
+
+      if (!rolesTree) {
+        throw new Error('Cannot create new hat without hats tree');
+      }
+
+      if (!safeAddress) {
+        throw new Error('Cannot create new hat without Safe address');
+      }
+
+      const [firstTerm] = parseRoleTermsFromFormRoleTerms(formRole.roleTerms ?? []);
+      if (!!firstTerm && !formRole.isTermed) {
+        throw new Error('First term is defined, but role is not termed');
+      }
+      const firstWearer = !!firstTerm ? firstTerm.nominatedWearers[0] : formRole.resolvedWearer;
+      const termEndDateTs = !!firstTerm ? firstTerm.termEndDateTs : BigInt(0);
+
+      if (firstWearer === undefined) {
+        throw new Error('Cannot create new hat without wearer');
+      }
+      const hatStruct = await createRoleStructWithPayments(
+        formRole.name,
+        formRole.description,
+        firstWearer,
+        parseSablierPaymentsFromFormRolePayments(formRole.payments),
+        termEndDateTs,
+      );
+
+      const { enableDAORolesModuleData, disableDAORolesModuleData } =
+        getEnableDisableDAORolesModuleData(daoRolesModificationModule);
+
+      const createNewRoleData = encodeFunctionData({
+        abi: legacy.abis.DAOHatsModificationModule,
+        functionName: 'createRoleHats',
+        args: [
+          {
+            rolesProtocol,
+            erc6551Registry,
+            rolesAccountImplementation: rolesAccount1ofNMasterCopy,
+            hatsModuleFactory: HATS_MODULES_FACTORY_ADDRESS,
+            hatsElectionsEligibilityImplementation: rolesElectionsEligibilityMasterCopy,
+            adminRoleId: BigInt(rolesTree.adminRole.id),
+            hats: [hatStruct],
+            topRoleId: BigInt(rolesTree.topRole.id),
+            topRoleAccount: rolesTree.topRole.smartAddress,
+            keyValuePairs,
+          },
+        ],
+      });
+
+      return [
+        {
+          targetAddress: safeAddress,
+          calldata: enableDAORolesModuleData,
+        },
+        {
+          targetAddress: daoRolesModificationModule,
+          calldata: createNewRoleData,
+        },
+        {
+          targetAddress: safeAddress,
+          calldata: disableDAORolesModuleData,
+        },
+      ];
+    },
+    [
+      rolesTree,
+      safeAddress,
+      parseRoleTermsFromFormRoleTerms,
+      parseSablierPaymentsFromFormRolePayments,
+      createRoleStructWithPayments,
+      getEnableDisableDAORolesModuleData,
+      daoRolesModificationModule,
+      rolesProtocol,
+      erc6551Registry,
+      rolesAccount1ofNMasterCopy,
+      rolesElectionsEligibilityMasterCopy,
+      keyValuePairs,
+    ],
+  );
+
+  const isDAOAutonomousAdminV1 = useCallback(
+    async (address: Address) => {
+      const daoAutonomousAdminV1Contract = getContract({
+        address: address,
+        abi: legacy.abis.DAOAutonomousAdminV1,
+        client: publicClient,
+      });
+      const DAO_AUTONOMOUS_ADMIN_V1_INTERFACE_ID = '0x0ac4a8e8';
+      return daoAutonomousAdminV1Contract.read.supportsInterface([
+        DAO_AUTONOMOUS_ADMIN_V1_INTERFACE_ID,
+      ]);
+    },
+    [publicClient],
+  );
+
+  /**
+   * @dev Checks if Admin Hat is already being worn by an instance of DAOAutonomousAdminV1
+   * @dev if not, prepares transactions to deploy a new instance of DAOAutonomousAdminV1
+   * @dev and mint a new hat
+   * @returns an array of transactions to create a deploy DAO Autonomous Admin and mint a new hat
+   */
+  const prepareAdminHatTxs = useCallback(
+    async (
+      adminRoleWearerAddress: Address | undefined,
+      adminRoleId: Hex,
+      isAnyRoleTermed: boolean,
+    ) => {
+      if (!isAnyRoleTermed) {
+        return [];
+      }
+
+      if (!!adminRoleWearerAddress && (await isDAOAutonomousAdminV1(adminRoleWearerAddress))) {
+        return [];
+      }
+
+      // deploy new instance of DAOAutonomousAdminV1 through ModuleProxyFactory
+      const salt = keccak256(
+        encodePacked(
+          ['bytes32', 'uint256'],
+          [keccak256(encodePacked(['bytes'], [ERC6551_REGISTRY_SALT])), BigInt(adminRoleId)],
+        ),
+      );
+      const deployDAOAutonomousAdminV1Calldata = encodeFunctionData({
+        abi: ModuleProxyFactoryAbi,
+        functionName: 'deployModule',
+        args: [
+          daoAutonomousAdminV1MasterCopy,
+          encodeFunctionData({
+            abi: legacy.abis.DAOAutonomousAdminV1,
+            functionName: 'setUp',
+            args: [zeroAddress],
+          }),
+          BigInt(salt),
+        ],
+      });
+      const predictedDAOAutonomousAdminV1Address = getCreate2Address({
+        from: moduleProxyFactory,
+        salt: salt,
+        bytecodeHash: keccak256(encodePacked(['bytes'], [deployDAOAutonomousAdminV1Calldata])),
+      });
+
+      // @todo max supply check and increase if maxed
+      const mintAdminHat = {
+        targetAddress: rolesProtocol,
+        calldata: encodeFunctionData({
+          abi: HatsAbi,
+          functionName: 'mintHat',
+          args: [BigInt(adminRoleId), predictedDAOAutonomousAdminV1Address],
+        }),
+      };
+      const deployDAOAutonomousAdminV1Tx = {
+        targetAddress: moduleProxyFactory,
+        calldata: deployDAOAutonomousAdminV1Calldata,
+      };
+
+      return [deployDAOAutonomousAdminV1Tx, mintAdminHat];
+    },
+    [
+      daoAutonomousAdminV1MasterCopy,
+      rolesProtocol,
+      moduleProxyFactory,
+      isDAOAutonomousAdminV1,
+    ],
+  );
+
+  const createBatchLinearStreamCreationTx = useCallback(
+    (formStreams: (SablierPaymentFormValues & { recipient: Address })[]) => {
+      const preparedStreams = formStreams.map(stream => {
+        if (
+          !stream.asset ||
+          !stream.startDate ||
+          !stream.endDate ||
+          !stream.amount?.bigintValue ||
+          stream.amount.bigintValue <= 0n
+        ) {
+          throw new Error('Form Values inValid', {
+            cause: stream,
+          });
+        }
+
+        return {
+          recipient: stream.recipient,
+          startDateTs: Math.floor(stream.startDate.getTime() / 1000),
+          endDateTs: Math.ceil(stream.endDate.getTime() / 1000),
+          cliffDateTs: Math.floor((stream.cliffDate?.getTime() ?? 0) / 1000),
+          totalAmount: stream.amount.bigintValue,
+          assetAddress: stream.asset.address,
+          cancelable: stream.cancelable,
+        };
+      });
+
+      return prepareBatchLinearStreamCreation(preparedStreams);
+    },
+    [prepareBatchLinearStreamCreation],
+  );
+
+  const getMemberChangedStreamsWithFundsToClaim = useCallback((formRole: RoleFormValueEdited) => {
+    return formRole.payments.filter(
+      payment => (payment?.withdrawableAmount ?? 0n) > 0n && !payment.isCancelling,
+    );
+  }, []);
+
+  const getNewStreamsFromFormHat = useCallback((formRole: RoleFormValueEdited) => {
+    return formRole.payments.filter(payment => !payment.streamId);
+  }, []);
+
+  const getCancelledStreamsFromFormHat = useCallback((formRole: RoleFormValueEdited) => {
+    return formRole.payments.filter(payment => payment.isCancelling && !!payment.streamId);
+  }, []);
+
+  const getRoleRemovedStreamsWithFundsToClaim = useCallback((formRole: RoleFormValueEdited) => {
+    return formRole.payments.filter(payment => (payment?.withdrawableAmount ?? 0n) > 0n);
+  }, []);
+
+  const getActiveStreamsFromFormHat = useCallback((formRole: RoleFormValueEdited) => {
+    return formRole.payments.filter(
+      payment => !payment.isCancelled && !!payment.endDate && payment.endDate > new Date(),
+    );
+  }, []);
+
+  const getPaymentTermRecipients = useCallback(
+    (formRole: RoleFormValueEdited): (SablierPaymentFormValues & { recipient: Address })[] => {
+      return getNewStreamsFromFormHat(formRole).map(payment => {
+        if (formRole.roleTerms === undefined || formRole.roleTerms.length === 0) {
+          throw new Error('Cannot prepare transactions without role terms');
+        }
+        const findTerm = formRole.roleTerms.find(
+          term =>
+            term.termEndDate &&
+            payment.endDate &&
+            term.termEndDate.getTime() === payment.endDate?.getTime(),
+        );
+        if (!findTerm) {
+          throw new Error('Cannot find term for payment');
+        }
+        if (!findTerm.nominee) {
+          throw new Error('Nominee is undefined');
+        }
+        return {
+          ...payment,
+          recipient: getAddress(findTerm.nominee),
+        };
+      });
+    },
+    [getNewStreamsFromFormHat],
+  );
+
+  const prepareRolePaymentUpdateTxs = useCallback(
+    async (formRole: RoleFormValueEdited) => {
+      if (!safeAddress) {
+        throw new Error('Cannot prepare transactions without DAO address');
+      }
+      if (formRole.wearer === undefined) {
+        throw new Error('Cannot prepare transactions without wearer');
+      }
+
+      const paymentTxs = []; // Initialize an empty array to hold the transaction data
+      const cancelledStreamsOnHat = getCancelledStreamsFromFormHat(formRole);
+      if (cancelledStreamsOnHat.length) {
+        // This role edit includes stream cancels. In case there are any unclaimed funds on these streams,
+        // we need to flush them out to the original wearer.
+
+        const originalRole = getHat(formRole.id);
+        if (!originalRole) {
+          throw new Error('Cannot find original hat');
+        }
+
+        for (const stream of cancelledStreamsOnHat) {
+          if (!stream.streamId || !stream.contractAddress || !formRole.smartAddress) {
+            throw new Error('Stream data is missing for cancel stream transaction');
+          }
+
+          // First transfer hat from the original wearer to the Safe
+          paymentTxs.push({
+            calldata: encodeFunctionData({
+              abi: HatsAbi,
+              functionName: 'transferRole',
+              args: [BigInt(formRole.id), originalRole.wearerAddress, safeAddress],
+            }),
+            targetAddress: rolesProtocol,
+          });
+
+          // flush withdrawable streams to the original wearer
+          if (stream.withdrawableAmount && stream.withdrawableAmount > 0n) {
+            const flushStreamTxCalldata = prepareFlushStreamTxs({
+              streamId: stream.streamId,
+              to: originalRole.wearerAddress,
+              smartAccount: formRole.smartAddress,
+            });
+
+            paymentTxs.push(...flushStreamTxCalldata);
+          }
+
+          // Cancel the stream
+          paymentTxs.push(...prepareCancelStreamTxs(stream.streamId));
+
+          // Finally, transfer the hat back to the correct wearer.
+          // Because a payment cancel can occur in the same role edit as a member change, we need to ensure hat is
+          // finally transferred to the correct wearer. Instead of transferring to `originalRole.wearer` here,
+          // `formRole.wearer` will represent the new wearer if the role member was changed, but will otherwise remain
+          // the original wearer since the member form field was untouched.
+          paymentTxs.push({
+            calldata: encodeFunctionData({
+              abi: HatsAbi,
+              functionName: 'transferRole',
+              args: [BigInt(formRole.id), safeAddress, getAddress(formRole.wearer)],
+            }),
+            targetAddress: rolesProtocol,
+          });
+        }
+      }
+
+      const newStreamsOnHat = getNewStreamsFromFormHat(formRole);
+      if (newStreamsOnHat.length) {
+        if (!formRole.smartAddress) {
+          throw new Error('Cannot prepare transactions for edited role without smart address');
+        }
+        const newPredictedHatSmartAccount = await predictSmartAccount(BigInt(formRole.id));
+        if (!newPredictedHatSmartAccount) {
+          throw new Error('Cannot predict smart account');
+        }
+        const newStreamTxData = createBatchLinearStreamCreationTx(
+          newStreamsOnHat.map(stream => ({ ...stream, recipient: newPredictedHatSmartAccount })),
+        );
+        paymentTxs.push(...newStreamTxData.preparedTokenApprovalsTransactions);
+        paymentTxs.push(...newStreamTxData.preparedStreamCreationTransactions);
+      }
+      return paymentTxs;
+    },
+    [
+      safeAddress,
+      getCancelledStreamsFromFormHat,
+      getNewStreamsFromFormHat,
+      getHat,
+      rolesProtocol,
+      prepareCancelStreamTxs,
+      prepareFlushStreamTxs,
+      predictSmartAccount,
+      createBatchLinearStreamCreationTx,
+    ],
+  );
+
+  const prepareTermedRolePaymentUpdateTxs = useCallback(
+    (formRole: RoleFormValueEdited) => {
+      if (!safeAddress) {
+        throw new Error('Cannot prepare transactions without DAO address');
+      }
+      if (formRole.wearer === undefined) {
+        throw new Error('Cannot prepare transactions without wearer');
+      }
+      if (formRole.roleTerms === undefined || formRole.roleTerms.length === 0) {
+        throw new Error('Cannot prepare transactions without role terms');
+      }
+      const paymentTxs = [];
+      const newStreamsOnHat = getNewStreamsFromFormHat(formRole);
+      if (newStreamsOnHat.length) {
+        const newStreamTxData = createBatchLinearStreamCreationTx(
+          getPaymentTermRecipients(formRole),
+        );
+        paymentTxs.push(...newStreamTxData.preparedTokenApprovalsTransactions);
+        paymentTxs.push(...newStreamTxData.preparedStreamCreationTransactions);
+      }
+      return paymentTxs;
+    },
+    [
+      createBatchLinearStreamCreationTx,
+      safeAddress,
+      getNewStreamsFromFormHat,
+      getPaymentTermRecipients,
+    ],
+  );
+
+  const prepareConvertRoleToTermedTxs = useCallback(
+    async (formRole: RoleFormValueEdited) => {
+      const roleHatCurrentState = getHat(formRole.id);
+
+      if (!roleHatCurrentState) {
+        throw new Error('Cannot find role hat');
+      }
+      if (roleHatCurrentState.isTermed) {
+        throw new Error('Cannot change role type for a termed role');
+      }
+      if (!rolesTree || !safeAddress) {
+        throw new Error('App is not ready', {
+          cause: {
+            rolesTree,
+            safeAddress,
+          },
+        });
+      }
+
+      if (
+        !formRole.roleTerms ||
+        formRole.roleTerms.length === 0 ||
+        !formRole.smartAddress ||
+        !formRole.wearer
+      ) {
+        throw new Error('formhat is missing required fields', {
+          cause: formRole,
+        });
+      }
+
+      const hatsModulesClient = new HatsModulesClient({
+        publicClient,
+      });
+      await hatsModulesClient.prepare();
+      const module = hatsModulesClient.getModuleByImplementation(
+        rolesElectionsEligibilityMasterCopy,
+      );
+      if (!module) {
+        throw new Error('Cannot find module');
+      }
+
+      const immutableArgs = [BigInt(rolesTree.topRole.id), BigInt(0)];
+      const roleId = BigInt(formRole.id);
+      const saltNonce = BigInt(ERC6551_REGISTRY_SALT);
+      const currentExistingHatWearer = roleHatCurrentState.wearerAddress;
+
+      const [firstTerm] = parseRoleTermsFromFormRoleTerms(formRole.roleTerms);
+      const firstTermNominee = firstTerm.nominatedWearers[0];
+      const firstTermEndDateTs = firstTerm.termEndDateTs;
+
+      const { encodedImmutableArgs, encodedMutableArgs } = checkAndEncodeArgs({
+        module,
+        immutableArgs: immutableArgs,
+        mutableArgs: [firstTermEndDateTs],
+      });
+
+      const createElectionsModuleTx = {
+        calldata: encodeFunctionData({
+          abi: HATS_MODULES_FACTORY_ABI,
+          functionName: 'createHatsModule',
+          args: [
+            rolesElectionsEligibilityMasterCopy,
+            roleId,
+            encodedImmutableArgs,
+            encodedMutableArgs,
+            saltNonce,
+          ],
+        }),
+        targetAddress: HATS_MODULES_FACTORY_ADDRESS,
+      };
+
+      const transferRoleToSafeTx = {
+        calldata: encodeFunctionData({
+          abi: HatsAbi,
+          functionName: 'transferRole',
+          args: [roleId, currentExistingHatWearer, safeAddress],
+        }),
+        targetAddress: rolesProtocol,
+      };
+      const transferRoleToBackToWearer = {
+        calldata: encodeFunctionData({
+          abi: HatsAbi,
+          functionName: 'transferRole',
+          args: [roleId, safeAddress, currentExistingHatWearer],
+        }),
+        targetAddress: rolesProtocol,
+      };
+
+      const streamsWithFundsToClaim = getRoleRemovedStreamsWithFundsToClaim(formRole);
+      const streamsWithdrawTx = [];
+      if (streamsWithFundsToClaim.length) {
+        for (const stream of streamsWithFundsToClaim) {
+          if (!stream.streamId || !stream.contractAddress) {
+            throw new Error(
+              'Stream ID and Stream ContractAddress is required for flush stream transaction',
+            );
+          }
+
+          const flushStreamTxCalldata = prepareFlushStreamTxs({
+            streamId: stream.streamId,
+            to: currentExistingHatWearer,
+            smartAccount: formRole.smartAddress,
+          });
+
+          streamsWithdrawTx.push(...flushStreamTxCalldata);
+        }
+      }
+
+      const activeStreams = getActiveStreamsFromFormHat(formRole);
+      const cancelStreamTxs = [];
+      if (activeStreams.length) {
+        for (const stream of activeStreams) {
+          if (!stream.streamId || !stream.contractAddress) {
+            throw new Error(
+              'Stream ID and Stream ContractAddress is required for cancel stream transaction',
+            );
+          }
+          cancelStreamTxs.push(...prepareCancelStreamTxs(stream.streamId));
+        }
+      }
+
+      const predictedElectionsModuleAddress = await hatsModulesClient.predictHatsModuleAddress({
+        // @todo This will need to be updated when/if https://github.com/Hats-Protocol/modules-sdk/pull/27 is merged
+        moduleId: module.implementationAddress,
+        roleId,
+        immutableArgs,
+        saltNonce,
+      });
+      const addElectionModuleTx = {
+        calldata: encodeFunctionData({
+          abi: HatsAbi,
+          functionName: 'changeHatEligibility',
+          args: [roleId, predictedElectionsModuleAddress],
+        }),
+        targetAddress: rolesProtocol,
+      };
+
+      const toggleMutabilityTx = {
+        calldata: encodeFunctionData({
+          abi: HatsAbi,
+          functionName: 'makeHatImmutable',
+          args: [roleId],
+        }),
+        targetAddress: rolesProtocol,
+      };
+
+      const electTx = {
+        calldata: encodeFunctionData({
+          abi: HatsElectionsEligibilityAbi,
+          functionName: 'elect',
+          args: [firstTermEndDateTs, [firstTermNominee]],
+        }),
+        targetAddress: predictedElectionsModuleAddress,
+      };
+
+      const isStreamsClaimableOrCancelable =
+        streamsWithFundsToClaim.length || streamsWithdrawTx.length;
+
+      const checkHatWearerStatusTx = {
+        calldata: encodeFunctionData({
+          abi: HatsAbi,
+          functionName: 'checkHatWearerStatus',
+          args: [roleId, currentExistingHatWearer],
+        }),
+        targetAddress: rolesProtocol,
+      };
+
+      const mintTx = {
+        calldata: encodeFunctionData({
+          abi: HatsAbi,
+          functionName: 'mintHat',
+          args: [roleId, firstTermNominee],
+        }),
+        targetAddress: rolesProtocol,
+      };
+
+      const conversionTxs = [];
+      // create the election module with the first term end date (open election)
+      conversionTxs.push(createElectionsModuleTx);
+
+      // if there are streams with funds to claim or cancel, we need to transfer the hat to the safe and flush/cancel the streams
+      if (isStreamsClaimableOrCancelable) {
+        conversionTxs.push(transferRoleToSafeTx);
+        conversionTxs.push(...streamsWithdrawTx);
+        conversionTxs.push(...cancelStreamTxs);
+        conversionTxs.push(transferRoleToBackToWearer);
+      }
+
+      // add election module to eligibility of hat
+      conversionTxs.push(addElectionModuleTx);
+      // make hat immutable
+      conversionTxs.push(toggleMutabilityTx);
+
+      // elect har nominee (closes election)
+      conversionTxs.push(electTx);
+
+      // check eligibility of currently wearer and burn if ineligible
+      conversionTxs.push(checkHatWearerStatusTx);
+
+      // mint hat to first nominee if current wearer is not the first nominee
+      if (currentExistingHatWearer !== firstTermNominee) {
+        conversionTxs.push(mintTx);
+      }
+      return conversionTxs;
+    },
+    [
+      getActiveStreamsFromFormHat,
+      getHat,
+      getRoleRemovedStreamsWithFundsToClaim,
+      rolesElectionsEligibilityMasterCopy,
+      rolesProtocol,
+      rolesTree,
+      parseRoleTermsFromFormRoleTerms,
+      prepareCancelStreamTxs,
+      prepareFlushStreamTxs,
+      publicClient,
+      safeAddress,
+    ],
+  );
+
+  const prepareCreateRolesModificationsProposalData = useCallback(
+    async (proposalMetadata: CreateProposalMetadata, modifiedRoles: RoleFormValueEdited[]) => {
+      if (!rolesTree || !safeAddress) {
+        throw new Error('Cannot prepare transactions without hats tree or DAO address');
+      }
+
+      const topRoleAccount = rolesTree.topRole.smartAddress;
+      const adminRoleWearer = rolesTree.adminRole.wearer;
+      const allTxs: { calldata: Hex; targetAddress: Address }[] = [];
+      const whitelistingPermissionAddedHats: bigint[] = [];
+      const whitelistingPermissionRemovedHats: bigint[] = [];
+
+      // The Algorithm
+      // for each modified role
+      //
+      // New Role
+      //   - Transfer the top hat to the DAOHats module, so it can create new hats on the safe's behalf
+      //   - allTxs.push(createRoleHat). This will (in the DAOHats contract):
+      //     - create hat,
+      //     - mint hat,
+      //     - create smart account for the hat,
+      //     - create new streams on the hat if any added
+      //  - createRoleHat will transfer the top hat back to the safe
+      //  - does it have proposal creation permission?
+      //   - does Governor has whitelisting strategy enabled?
+      //     - if no: allTxs.push(deploy new strategy with params based on existing strategy)
+      // Deleted Role
+      //   - for each inactive stream with funds to claim
+      //     - allTxs.push(flush stream transaction data)
+      //   - for each active stream
+      //     - allTxs.push(flush stream transaction data)
+      //     - allTxs.push(cancel stream transaction data)
+      //   - allTxs.push(deactivate role transaction data)
+      //   - for roles with permission to create proposals: allTxs.push(un-whitelist hat)
+      // Edited Role
+      //   - is the name or description changed?
+      //     - allTxs.push(edit details data)
+      //   - is the member changed?
+      //     - for each stream with funds to claim
+      //       - if stream is not set to be cancelled
+      //         - allTxs.push(flush stream transaction data)
+      //   - for each cancelled stream
+      //     - allTxs.push(flush stream transaction data)
+      //   - for each new stream
+      //     - allTxs.push(create new stream transactions datas)
+      //   - is canCreateProposals changed?
+      //     - does Governor has whitelisting strategy enabled?
+      //       - if no: allTxs.push(deploy new strategy with params based on existing strategy)
+      //     - allTxs.push(whitelist or un-whitelist)
+
+      let newHatsCount = 0;
+      allTxs.push(
+        ...(await prepareAdminHatTxs(
+          rolesTree.adminRole.wearer,
+          rolesTree.adminRole.id,
+          modifiedRoles.some(hat => hat.isTermed),
+        )),
+      );
+
+      const whitelistSablierTransactions = await createWhitelistSablierTransactions(
+        modifiedRoles.flatMap(mH => mH.payments),
+      );
+      allTxs.push(...whitelistSablierTransactions);
+
+      for (let index = 0; index < modifiedRoles.length; index++) {
+        const formRole = modifiedRoles[index];
+        if (formRole.name === undefined || formRole.description === undefined) {
+          throw new Error('Role details are missing', {
+            cause: formRole,
+          });
+        }
+
+        if (formRole.editedRole.status === EditBadgeStatus.New) {
+          allTxs.push(...(await prepareNewHatTxs(formRole)));
+          if (formRole.canCreateProposals) {
+            const newHatId = predictHatId({
+              adminRoleId: rolesTree.adminRole.id,
+              hatsCount: rolesTree.roleItems.length + newHatsCount,
+            });
+            whitelistingPermissionAddedHats.push(newHatId);
+          }
+          newHatsCount++;
+        } else if (formRole.editedRole.status === EditBadgeStatus.Removed) {
+          if (formRole.smartAddress === undefined) {
+            throw new Error(
+              'Cannot prepare transactions for removed role without smart account address',
+            );
+          }
+
+          const originalRole = getHat(formRole.id);
+          if (!originalRole) {
+            throw new Error('Cannot find original hat');
+          }
+
+          allTxs.push({
+            calldata: encodeFunctionData({
+              abi: HatsAbi,
+              functionName: 'transferRole',
+              args: [BigInt(formRole.id), originalRole.wearerAddress, safeAddress],
+            }),
+            targetAddress: rolesProtocol,
+          });
+
+          const streamsWithFundsToClaim = getRoleRemovedStreamsWithFundsToClaim(formRole);
+
+          if (streamsWithFundsToClaim.length) {
+            // This role is being removed.
+            // We need to flush out any unclaimed funds from streams on this role to the original wearer.
+            for (const stream of streamsWithFundsToClaim) {
+              if (!stream.streamId || !stream.contractAddress) {
+                throw new Error(
+                  'Stream ID and Stream ContractAddress is required for flush stream transaction',
+                );
+              }
+
+              const flushStreamTxCalldata = prepareFlushStreamTxs({
+                streamId: stream.streamId,
+                to: getAddress(originalRole.wearerAddress),
+                smartAccount: formRole.smartAddress,
+              });
+
+              allTxs.push(...flushStreamTxCalldata);
+            }
+          }
+
+          const activeStreams = getActiveStreamsFromFormHat(formRole);
+
+          if (activeStreams.length) {
+            for (const stream of activeStreams) {
+              if (!stream.streamId || !stream.contractAddress) {
+                throw new Error(
+                  'Stream ID and Stream ContractAddress is required for cancel stream transaction',
+                );
+              }
+              allTxs.push(...prepareCancelStreamTxs(stream.streamId));
+            }
+          }
+
+          allTxs.push({
+            calldata: encodeFunctionData({
+              abi: HatsAccount1ofNAbi,
+              functionName: 'execute',
+              args: [
+                rolesProtocol,
+                0n,
+                encodeFunctionData({
+                  abi: HatsAbi,
+                  functionName: 'setHatStatus',
+                  args: [BigInt(formRole.id), false],
+                }),
+                0,
+              ],
+            }),
+            targetAddress: topRoleAccount,
+          });
+
+          if (originalRole.canCreateProposals) {
+            whitelistingPermissionRemovedHats.push(BigInt(originalRole.id));
+          }
+        } else if (formRole.editedRole.status === EditBadgeStatus.Updated) {
+          if (
+            formRole.editedRole.fieldNames.includes('roleName') ||
+            formRole.editedRole.fieldNames.includes('roleDescription')
+          ) {
+            const details = await uploadHatDescription(
+              hatsDetailsBuilder({
+                name: formRole.name,
+                description: formRole.description,
+              }),
+              ipfsClient,
+            );
+            allTxs.push({
+              calldata: encodeFunctionData({
+                abi: HatsAbi,
+                functionName: 'changeHatDetails',
+                args: [BigInt(formRole.id), details],
+              }),
+              targetAddress: rolesProtocol,
+            });
+          }
+          if (formRole.editedRole.fieldNames.includes('member') && !formRole.isTermed) {
+            if (!formRole.wearer) {
+              throw new Error('Cannot prepare transactions for edited role without wearer');
+            }
+            const newWearer = getAddress(formRole.wearer);
+            if (formRole.smartAddress === undefined) {
+              throw new Error('Cannot prepare transactions for edited role without smart address');
+            }
+
+            // formRole's `wearer` is the new wearer. We grab the original wearer (before this member change attempt)
+            // on the hat, because we need that address to transfer to the new wearer.
+            const originalRole = getHat(formRole.id);
+            if (!originalRole) {
+              throw new Error('Cannot find original hat');
+            }
+
+            const streamsWithFundsToClaim = getMemberChangedStreamsWithFundsToClaim(formRole);
+
+            if (streamsWithFundsToClaim.length) {
+              // If there are unclaimed funds on any streams on the hat, we need to flush them to the original wearer.
+              // First, we transfer the hat to the Safe, which will then be able to withdraw the funds on behalf of the original wearer.
+              // Finally, we transfer the hat from the Safe to the new wearer.
+              allTxs.push({
+                calldata: encodeFunctionData({
+                  abi: HatsAbi,
+                  functionName: 'transferRole',
+                  args: [BigInt(formRole.id), originalRole.wearerAddress, safeAddress],
+                }),
+                targetAddress: rolesProtocol,
+              });
+
+              for (const stream of streamsWithFundsToClaim) {
+                if (!stream.streamId || !stream.contractAddress) {
+                  throw new Error(
+                    'Stream ID and Stream ContractAddress is required for flush stream transaction',
+                  );
+                }
+
+                const flushStreamTxCalldata = prepareFlushStreamTxs({
+                  streamId: stream.streamId,
+                  to: originalRole.wearerAddress,
+                  smartAccount: formRole.smartAddress,
+                });
+
+                allTxs.push(...flushStreamTxCalldata);
+              }
+
+              allTxs.push({
+                calldata: encodeFunctionData({
+                  abi: HatsAbi,
+                  functionName: 'transferRole',
+                  args: [BigInt(formRole.id), safeAddress, newWearer],
+                }),
+                targetAddress: rolesProtocol,
+              });
+            } else {
+              // Since there are no streams with funds to claim, we can just transfer the hat directly to the new wearer.
+              allTxs.push({
+                calldata: encodeFunctionData({
+                  abi: HatsAbi,
+                  functionName: 'transferRole',
+                  args: [BigInt(formRole.id), originalRole.wearerAddress, newWearer],
+                }),
+                targetAddress: rolesProtocol,
+              });
+            }
+          }
+          if (formRole.editedRole.fieldNames.includes('payments')) {
+            if (!formRole.isTermed) {
+              allTxs.push(...(await prepareRolePaymentUpdateTxs(formRole)));
+            } else {
+              allTxs.push(...prepareTermedRolePaymentUpdateTxs(formRole));
+            }
+          }
+          if (formRole.editedRole.fieldNames.includes('newTerm')) {
+            if (!formRole.isTermed || !formRole.roleTerms) {
+              throw new Error('Cannot prepare transactions for edited role without role terms');
+            }
+
+            if (
+              adminRoleWearer === undefined ||
+              !(await isDAOAutonomousAdminV1(adminRoleWearer))
+            ) {
+              throw new Error(
+                'Cannot prepare transactions for edited role without dao auto admin hat wearer',
+              );
+            }
+
+            if (
+              formRole.eligibility === undefined ||
+              !(await isElectionEligibilityModule(
+                formRole.eligibility,
+                rolesElectionsEligibilityMasterCopy,
+                publicClient,
+              ))
+            ) {
+              throw new Error(
+                'Cannot prepare transactions for edited role without eligibility module set',
+              );
+            }
+
+            const terms = parseRoleTermsFromFormRoleTerms(formRole.roleTerms);
+            // @dev {assupmtion}: We are only dealing with a single term here, either the next term or a new current term when there is no term set.
+            // @dev {assupmtion}: There were always be more than one term in this workflow.
+            const [newTerm, previousTerm] = terms;
+            const electionsContract = getContract({
+              address: formRole.eligibility,
+              abi: HatsElectionsEligibilityAbi,
+              client: publicClient,
+            });
+
+            const nextTermEndDateTs = await electionsContract.read.nextTermEnd();
+            if (nextTermEndDateTs !== 0n) {
+              // previous term was never triggered, and must be triggered before we can set the next term
+              allTxs.push({
+                calldata: encodeFunctionData({
+                  abi: HatsElectionsEligibilityAbi,
+                  functionName: 'startNextTerm',
+                  args: [],
+                }),
+                targetAddress: formRole.eligibility,
+              });
+            }
+
+            allTxs.push({
+              calldata: encodeFunctionData({
+                abi: HatsElectionsEligibilityAbi,
+                functionName: 'setNextTerm',
+                args: [newTerm.termEndDateTs],
+              }),
+              targetAddress: formRole.eligibility,
+            });
+
+            allTxs.push({
+              calldata: encodeFunctionData({
+                abi: HatsElectionsEligibilityAbi,
+                functionName: 'elect',
+                args: [newTerm.termEndDateTs, [newTerm.nominatedWearers[0]]],
+              }),
+              targetAddress: formRole.eligibility,
+            });
+            // current term has ended
+            if (previousTerm.termEndDateTs < BigInt(Date.now()) / 1000n) {
+              if (
+                previousTerm.nominatedWearers[0].toLocaleLowerCase() !==
+                newTerm.nominatedWearers[0].toLocaleLowerCase()
+              ) {
+                allTxs.push({
+                  calldata: encodeFunctionData({
+                    abi: legacy.abis.DAOAutonomousAdminV1,
+                    functionName: 'triggerStartNextTerm',
+                    args: [
+                      {
+                        // @dev formRole.wearer is not changeable for term roles. It will always be the current wearer.
+                        currentWearer: getAddress(previousTerm.nominatedWearers[0]),
+                        rolesProtocol: rolesProtocol,
+                        roleId: BigInt(formRole.id),
+                        nominatedWearer: newTerm.nominatedWearers[0],
+                      },
+                    ],
+                  }),
+                  targetAddress: adminRoleWearer,
+                });
+              } else {
+                allTxs.push({
+                  calldata: encodeFunctionData({
+                    abi: HatsElectionsEligibilityAbi,
+                    functionName: 'startNextTerm',
+                    args: [],
+                  }),
+                  targetAddress: formRole.eligibility,
+                });
+              }
+            }
+          }
+
+          if (formRole.editedRole.fieldNames.includes('canCreateProposals')) {
+            const originalRole = getHat(formRole.id);
+            if (!originalRole) {
+              throw new Error('Cannot find original hat');
+            }
+            const roleId = BigInt(originalRole.id);
+            if (!originalRole.canCreateProposals && formRole.canCreateProposals) {
+              whitelistingPermissionAddedHats.push(roleId);
+            } else {
+              whitelistingPermissionRemovedHats.push(roleId);
+            }
+          }
+          if (formRole.editedRole.fieldNames.includes('roleType')) {
+            allTxs.push(...(await prepareConvertRoleToTermedTxs(formRole)));
+          }
+        } else {
+          throw new Error('Invalid Edited Status');
+        }
+      }
+
+      const whitelistingVotingStrategyAddress =
+        linearVotingErc20WithRolesWhitelistingAddress ||
+        linearVotingErc721WithRolesWhitelistingAddress;
+      if (whitelistingPermissionAddedHats.length > 0) {
+        if (!whitelistingVotingStrategyAddress) {
+          const deployWhitelistingVotingStrategyCalldata = await buildDeployWhitelistingStrategy(
+            whitelistingPermissionAddedHats,
+          );
+          if (!deployWhitelistingVotingStrategyCalldata) {
+            throw new Error(
+              'Error encoding transaction for deploying whitelisting voting strategy',
+            );
+          }
+          allTxs.push(...deployWhitelistingVotingStrategyCalldata);
+        } else {
+          whitelistingPermissionAddedHats.forEach(roleId => {
+            allTxs.push({
+              targetAddress: whitelistingVotingStrategyAddress,
+              calldata: encodeFunctionData({
+                abi: legacy.abis.LinearERC20VotingWithHatsProposalCreation,
+                functionName: 'whitelistHat',
+                args: [roleId],
+              }),
+            });
+          });
+        }
+      }
+
+      if (whitelistingPermissionRemovedHats.length > 0) {
+        if (!whitelistingVotingStrategyAddress) {
+          throw new Error('Can not un-whitelist role from proposal creation permission', {
+            cause: {
+              linearVotingErc20WithRolesWhitelistingAddress,
+              linearVotingErc721WithRolesWhitelistingAddress,
+            },
+          });
+        }
+        whitelistingPermissionRemovedHats.forEach(roleId => {
+          allTxs.push({
+            targetAddress: whitelistingVotingStrategyAddress,
+            calldata: encodeFunctionData({
+              abi: legacy.abis.LinearERC20VotingWithHatsProposalCreation,
+              functionName: 'removeHatFromWhitelist',
+              args: [roleId],
+            }),
+          });
+        });
+      }
+      return {
+        targets: allTxs.map(({ targetAddress }) => targetAddress),
+        calldatas: allTxs.map(({ calldata }) => calldata),
+        values: allTxs.map(() => 0n),
+        metaData: proposalMetadata,
+      };
+    },
+    [
+      rolesTree,
+      safeAddress,
+      prepareAdminHatTxs,
+      createWhitelistSablierTransactions,
+      linearVotingErc20WithRolesWhitelistingAddress,
+      linearVotingErc721WithRolesWhitelistingAddress,
+      prepareNewHatTxs,
+      getHat,
+      rolesProtocol,
+      getRoleRemovedStreamsWithFundsToClaim,
+      getActiveStreamsFromFormHat,
+      prepareFlushStreamTxs,
+      prepareCancelStreamTxs,
+      ipfsClient,
+      getMemberChangedStreamsWithFundsToClaim,
+      prepareRolePaymentUpdateTxs,
+      prepareTermedRolePaymentUpdateTxs,
+      isDAOAutonomousAdminV1,
+      rolesElectionsEligibilityMasterCopy,
+      publicClient,
+      parseRoleTermsFromFormRoleTerms,
+      prepareConvertRoleToTermedTxs,
+      buildDeployWhitelistingStrategy,
+    ],
+  );
+
+  const createEditRolesProposal = useCallback(
+    async (values: RoleFormValues, formikHelpers: FormikHelpers<RoleFormValues>) => {
+      if (!safe) {
+        throw new Error('Cannot create Roles proposal without known Safe');
+      }
+
+      const { setSubmitting } = formikHelpers;
+      setSubmitting(true);
+
+      // filter to hats that have been modified, or whose payments have been modified (ie includes `editedRole` prop)
+      const modifiedRoles: RoleFormValueEdited[] = (
+        await Promise.all(
+          values.hats.map(async hat => {
+            if (hat.editedRole === undefined) {
+              return null;
+            }
+            return {
+              ...hat,
+              editedRole: hat.editedRole,
+              wearer: hat.resolvedWearer,
+            };
+          }),
+        )
+      ).filter(hat => hat !== null);
+
+      let proposalData: ProposalExecuteData;
+      try {
+        if (!rolesTreeId) {
+          // This safe has no top hat, so we prepare a proposal to create one. This will also create an admin hat,
+          // along with any other hats that are added.
+
+          if (modifiedRoles.some(hat => hat.editedRole.status !== EditBadgeStatus.New)) {
+            throw new Error(
+              'No Hats Tree ID exists, but some modified Roles are marked as non-New.',
+            );
+          }
+
+          proposalData = await prepareCreateTopHatProposalData(
+            values.proposalMetadata,
+            modifiedRoles,
+          );
+        } else {
+          if (!rolesTree) {
+            throw new Error('Cannot edit Roles without a HatsTree');
+          }
+
+          proposalData = await prepareCreateRolesModificationsProposalData(
+            values.proposalMetadata,
+            modifiedRoles,
+          );
+        }
+
+        // Add "send assets" actions to the proposal data
+        values.actions.forEach(action => {
+          const {
+            tokenAddress,
+            transferAmount,
+            calldata,
+            action: { actionType },
+          } = prepareSendAssetsActionData(action);
+
+          const isNativeTokenTransfer = actionType === ProposalActionType.NATIVE_TRANSFER;
+
+          // Add transaction details based on transfer type
+          const target = isNativeTokenTransfer
+            ? action.recipientAddress // For native: recipient gets tokens directly
+            : tokenAddress!; // For tokens: token contract handles transfer
+
+          const value = isNativeTokenTransfer
+            ? transferAmount // For native: specify amount of native tokens
+            : 0n; // For tokens: no native tokens needed
+
+          // calldata is either empty for native transfers
+          // or encoded token transfer function call
+          proposalData.targets.push(target);
+          proposalData.values.push(value);
+          proposalData.calldatas.push(calldata);
+        });
+
+        // All done, submit the proposal!
+        await submitProposal({
+          proposalData,
+          nonce: values.customNonce ?? safe.nextNonce,
+          pendingToastMessage: t('proposalCreatePendingToastMessage', { ns: 'proposal' }),
+          successToastMessage: t('proposalCreateSuccessToastMessage', { ns: 'proposal' }),
+          failedToastMessage: t('proposalCreateFailureToastMessage', { ns: 'proposal' }),
+          successCallback: () => {
+            if (safeAddress) {
+              navigate(DAO_ROUTES.dao.relative(addressPrefix, safeAddress));
+            }
+          },
+        });
+      } catch (e) {
+        console.error(e);
+        toast.error(t('encodingFailedMessage', { ns: 'proposal' }));
+      } finally {
+        formikHelpers.setSubmitting(false);
+      }
+    },
+    [
+      safe,
+      rolesTreeId,
+      submitProposal,
+      t,
+      prepareCreateTopHatProposalData,
+      rolesTree,
+      prepareCreateRolesModificationsProposalData,
+      safeAddress,
+      navigate,
+      addressPrefix,
+    ],
+  );
+
+  return {
+    createEditRolesProposal,
+  };
+}

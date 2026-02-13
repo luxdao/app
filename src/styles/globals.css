@@ -1,0 +1,281 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Pars DAO Theme - Monochrome Design System
+ * Based on Vercel/Linear aesthetic with pure grayscale palette
+ *
+ * Design principles:
+ * - Pure monochrome: black, white, grays only
+ * - Subtle gradients: near-monochrome for accents
+ * - Clean typography: tight tracking, small sizes
+ * - Lots of whitespace: cards with subtle borders, not heavy shadows
+ */
+
+@layer base {
+  /* Lux Light Theme - Pure White */
+  :root {
+    /* Core colors - pure grayscale */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+
+    /* Card surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+
+    /* Popover surfaces */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+
+    /* Primary action - pure black */
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Secondary action - light gray */
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+
+    /* Muted elements */
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+
+    /* Accent highlights */
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+
+    /* Semantic - destructive (subtle red) */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Semantic - success (subtle green) */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+
+    /* Semantic - warning (subtle amber) */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+
+    /* Borders and inputs */
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+
+    /* Radius */
+    --radius: 0.5rem;
+
+    /* Grayscale palette */
+    --neutral-0: 0 0% 100%;
+    --neutral-50: 0 0% 98%;
+    --neutral-100: 0 0% 96.1%;
+    --neutral-200: 0 0% 89.8%;
+    --neutral-300: 0 0% 83.1%;
+    --neutral-400: 0 0% 63.9%;
+    --neutral-500: 0 0% 45.1%;
+    --neutral-600: 0 0% 32.2%;
+    --neutral-700: 0 0% 25.1%;
+    --neutral-800: 0 0% 14.9%;
+    --neutral-900: 0 0% 9%;
+    --neutral-950: 0 0% 3.9%;
+  }
+
+  /* Lux Dark Theme - Pure Black */
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 142 69% 58%;
+    --success-foreground: 0 0% 9%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+
+    /* Inverted grayscale for dark mode */
+    --neutral-0: 0 0% 3.9%;
+    --neutral-50: 0 0% 9%;
+    --neutral-100: 0 0% 14.9%;
+    --neutral-200: 0 0% 25.1%;
+    --neutral-300: 0 0% 32.2%;
+    --neutral-400: 0 0% 45.1%;
+    --neutral-500: 0 0% 63.9%;
+    --neutral-600: 0 0% 83.1%;
+    --neutral-700: 0 0% 89.8%;
+    --neutral-800: 0 0% 96.1%;
+    --neutral-900: 0 0% 98%;
+    --neutral-950: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    /* Smooth theme transitions */
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Typography - tight and clean */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+
+  h4 {
+    @apply text-lg md:text-xl;
+  }
+
+  /* Small text - heavy use per design language */
+  .text-xs {
+    @apply tracking-wide;
+  }
+}
+
+@layer components {
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-md border border-border/50;
+  }
+
+  /* Subtle glow effect - monochrome only */
+  .glow {
+    box-shadow:
+      0 0 20px hsl(var(--foreground) / 0.03),
+      0 0 40px hsl(var(--foreground) / 0.02),
+      0 0 60px hsl(var(--foreground) / 0.01);
+  }
+
+  /* Focus ring - Vercel style */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /* Gradient border - subtle monochrome */
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(to right, hsl(var(--background)), hsl(var(--background)));
+    background-clip: padding-box;
+    border: 1px solid transparent;
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    margin: -1px;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--foreground) / 0.1),
+      hsl(var(--foreground) / 0.05),
+      hsl(var(--foreground) / 0.1)
+    );
+  }
+
+  /* Hairline gradient - for nav separators */
+  .hairline-gradient {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--border)),
+      transparent
+    );
+    height: 1px;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Skeleton loading animation */
+  .skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+
+  /* Text gradient - monochrome */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--foreground)) 0%,
+      hsl(var(--muted-foreground)) 50%,
+      hsl(var(--foreground)) 100%
+    );
+  }
+}
+
+/* Animation for skeleton loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted-foreground) / 0.1) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
