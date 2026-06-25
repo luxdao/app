@@ -1,0 +1,14 @@
+{
+  "revenueSharingTitle": "اشتراک درآمد",
+  "revShareDaoSafeWarning": "وجوه ارسال شده به این آدرس تقسیم نخواهند شد",
+  "revShareTotalError": "مجموع از ۱۰۰٪ بیشتر است",
+  "daoSafeWallet": "کیف پول صندوق DAO",
+  "revSplitWallet": "کیف پول تقسیم درآمد",
+  "counterparties": "طرف‌های مقابل",
+  "revShareAddSplitWallet": "افزودن کیف پول",
+  "currentDaoTreasureShareLabel": "سهم فعلی خزانه DAO",
+  "parentDaoTreasureShareLabel": "DAO والد",
+  "currentTokenHolderShareLabel": "استیکینگ فعلی دارندگان توکن",
+  "revSplitTotalLabel": "مجموع",
+  "addRevenueShare": "افزودن اشتراک درآمد"
+}

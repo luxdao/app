@@ -1,0 +1,10 @@
+{
+  "actions": "اقدامات",
+  "addAction": "افزودن اقدام",
+  "transferAssets": "انتقال دارایی‌ها",
+  "transferAssetsSub": "ایجاد پرداخت‌های یکباره.",
+  "comingSoon": "به زودی...",
+  "comingSoonSub": "اقدامات بیشتر در راه است.",
+  "transactionBuilderActionCard_single": "سازنده تراکنش: اجرای {{ functionName }} در {{ targetAddress }}",
+  "transactionBuilderActionCard_multiple": "سازنده تراکنش: دسته‌ای {{ numOfTransactions }} تراکنش"
+}

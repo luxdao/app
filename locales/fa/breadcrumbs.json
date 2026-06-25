@@ -1,0 +1,19 @@
+{
+  "createNewDAO": "ایجاد DAO جدید",
+  "createSubDAO": "ایجاد زیر-DAO",
+  "headerTitle": "{{daoName}} {{subject}}",
+  "proposals": "همه پیشنهادها",
+  "proposalNew": "ایجاد پیشنهاد",
+  "nodes": "سازمان",
+  "staking": "استیکینگ",
+  "roles": "نقش‌ها",
+  "treasury": "خزانه",
+  "proposal": "#{{proposalId}} {{proposalTitle}}",
+  "proposalTemplates": "قالب‌های پیشنهاد",
+  "proposalTemplate": "{{proposalTemplateTitle}}",
+  "proposalTemplateNew": "ایجاد قالب پیشنهاد",
+  "deployToken": "استقرار توکن",
+  "editDAO": "ویرایش DAO",
+  "parentLink": "DAO والد",
+  "settings": "تنظیمات"
+}

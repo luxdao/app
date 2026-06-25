@@ -1,0 +1,14 @@
+{
+  "connect": "اتصال",
+  "connectWallet": "اتصال کیف پول",
+  "disconnect": "قطع اتصال",
+  "wallet": "کیف پول",
+  "titleManageProposalTemplate": "مدیریت الگو",
+  "optionCreateSubDAO": "ایجاد زیر-DAO",
+  "optionInitiateFreeze": "شروع انجماد",
+  "optionInitiateClawback": "شروع بازپس‌گیری",
+  "optionRemoveTemplate": "حذف الگو",
+  "optionForkTemplate": "فورک الگو",
+  "optionModifyGovernance": "تغییر حکمرانی",
+  "optionSettings": "تنظیمات"
+}

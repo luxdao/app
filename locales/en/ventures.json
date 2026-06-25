@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Venture DAO",
+  "pageSubtitle": "Invest in projects building the future of the Lux ecosystem",
+  "tokenGateTitle": "Investor Access Required",
+  "tokenGateDescription": "Access to ventures requires holding at least 1M liquid LUX tokens. This ensures aligned incentives between investors and the protocol.",
+  "getPars": "Get LUX",
+  "partnerTitle": "Partner with Lux",
+  "partnerDescription": "Join our network of strategic partners supporting ecosystem initiatives, public goods funding, and community projects worldwide.",
+  "becomePartner": "Become a Partner",
+  "investTitle": "Invest via Protocol Bonds",
+  "investDescription": "Deposit assets to acquire discounted LUX governance tokens through our OHM-inspired bonding mechanism. Build protocol-owned liquidity.",
+  "viewBonds": "View Available Bonds",
+  "activeVentures": "Active Ventures",
+  "createVenture": "Create Venture"
+}

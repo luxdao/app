@@ -1,0 +1,17 @@
+{
+  "home": "خانه",
+  "proposals": "پیشنهادها",
+  "nodes": "سازمان",
+  "roles": "نقش‌ها",
+  "treasury": "خزانه",
+  "staking": "استیکینگ",
+  "proposalTemplates": "قالب‌ها",
+  "faq": "سوالات متداول",
+  "chat": "Warpcast",
+  "documentation": "مستندات",
+  "ariaLabelFractalBrand": "رفتن به صفحه اصلی DAO",
+  "navigationExternalTelegram": "رفتن به تلگرام",
+  "navigationExternalX": "رفتن به X",
+  "navigationExternalWarpcast": "رفتن به Warpcast",
+  "navigationExternalDiscordmade": "رفتن به دیسکورد"
+}
