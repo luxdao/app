@@ -1,0 +1,6 @@
+.git
+.github
+Dockerfile
+.dockerignore
+CLAUDE.md
+LLM.md

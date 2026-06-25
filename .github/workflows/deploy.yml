@@ -1,0 +1,64 @@
+name: build-deploy
+
+# lux.vote is a pre-built static SPA (no source/build): index.html + assets/
+# are committed at the repo root with absolute /assets/ paths. CI just bakes
+# them into the hanzoai/spa runner image and pushes to GHCR. The k8s
+# Deployment (universe: k8s/lux-vote) pulls ghcr.io/luxfi/vote:latest.
+# Image lives under luxfi/ (same org as this repo) so the default
+# GITHUB_TOKEN's packages:write scope is sufficient — no cross-org PAT.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          # arm64 disabled while hanzoai/spa base image is amd64-only
+          # (mirrors lux-apps/credit). Restore once the base is multi-arch.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          tags: |
+            ghcr.io/luxfi/vote:latest-${{ matrix.arch }}
+            ghcr.io/luxfi/vote:${{ github.sha }}-${{ matrix.arch }}
+
+  manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          # Single-arch (amd64) while the hanzoai/spa arm64 base is unavailable.
+          docker buildx imagetools create -t ghcr.io/luxfi/vote:latest \
+            ghcr.io/luxfi/vote:latest-amd64
+          docker buildx imagetools create -t ghcr.io/luxfi/vote:${{ github.sha }} \
+            ghcr.io/luxfi/vote:${{ github.sha }}-amd64
