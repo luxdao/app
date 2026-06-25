@@ -18,12 +18,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: ${{ matrix.runner }}
+    # Self-hosted ARC runner (arc-system/lux-build on lux-k8s, registered to
+    # the luxfi org, DinD-enabled). NO GitHub-hosted builders.
+    runs-on: lux-build
     strategy:
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-latest
           # arm64 disabled while hanzoai/spa base image is amd64-only
           # (mirrors lux-apps/credit). Restore once the base is multi-arch.
     steps:
@@ -49,7 +50,7 @@ jobs:
 
   manifest:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: lux-build
     steps:
       - uses: docker/login-action@v3
         with:
