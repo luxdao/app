@@ -21,6 +21,6 @@
   "failedTokenClaim": "申領失敗{{symbol}}",
   "successTokenClaim": "您已成功申領{{amount}}{{symbol}}",
   "snapshotRecastVoteHelper": "在投票結束前，您仍可更改您的投票。",
-  "modifyGovernanceSetAzoriusProposalPendingMessage": "提交修改治理的提案...",
+  "modifyGovernanceSetGovernorProposalPendingMessage": "提交修改治理的提案...",
   "errorLoadingParentNode": "載入父代錯誤"
 }

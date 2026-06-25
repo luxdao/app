@@ -21,6 +21,6 @@
   "failedTokenClaim": "Не удалось заявить {{symbol}}",
   "successTokenClaim": "Вы успешно заявили о себе {{amount}} {{symbol}}",
   "snapshotRecastVoteHelper": "Вы все еще можете изменить свой голос до окончания периода голосования.",
-  "modifyGovernanceSetAzoriusProposalPendingMessage": "Представление предложения по изменению управления...",
+  "modifyGovernanceSetGovernorProposalPendingMessage": "Представление предложения по изменению управления...",
   "errorLoadingParentNode": "Ошибка при загрузке родителя"
 }

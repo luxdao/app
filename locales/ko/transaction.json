@@ -21,6 +21,6 @@
   "failedTokenClaim": "청구에 실패했습니다 {{symbol}}",
   "successTokenClaim": "{{amount}} {{symbol}}",
   "snapshotRecastVoteHelper": "투표 기간이 종료될 때까지 투표를 변경할 수 있습니다.",
-  "modifyGovernanceSetAzoriusProposalPendingMessage": "거버넌스 변경을 위한 제안서 제출하기...",
+  "modifyGovernanceSetGovernorProposalPendingMessage": "거버넌스 변경을 위한 제안서 제출하기...",
   "errorLoadingParentNode": "부모 로드 중 오류"
 }

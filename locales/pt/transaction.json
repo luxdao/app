@@ -21,6 +21,6 @@
   "failedTokenClaim": "Falha na reivindicação {{symbol}}",
   "successTokenClaim": "Reclamou com sucesso {{amount}} {{symbol}}",
   "snapshotRecastVoteHelper": "Ainda podes alterar o teu voto até ao final do período de votação.",
-  "modifyGovernanceSetAzoriusProposalPendingMessage": "Apresentação de uma proposta de alteração da governação...",
+  "modifyGovernanceSetGovernorProposalPendingMessage": "Apresentação de uma proposta de alteração da governação...",
   "errorLoadingParentNode": "Erro ao carregar o pai"
 }

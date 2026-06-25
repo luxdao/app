@@ -21,6 +21,6 @@
   "failedTokenClaim": "Не вдалося подати заявку {{symbol}}",
   "successTokenClaim": "Ви успішно подали заявку {{amount}} {{symbol}}",
   "snapshotRecastVoteHelper": "Ви все ще можете змінити свій голос до закінчення періоду голосування.",
-  "modifyGovernanceSetAzoriusProposalPendingMessage": "Подання пропозиції щодо зміни керівництва...",
+  "modifyGovernanceSetGovernorProposalPendingMessage": "Подання пропозиції щодо зміни керівництва...",
   "errorLoadingParentNode": "Помилка завантаження батька"
 }

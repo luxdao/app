@@ -21,6 +21,6 @@
   "failedTokenClaim": "No se ha podido reclamar {{symbol}}",
   "successTokenClaim": "Ha reclamado correctamente {{amount}} {{symbol}}",
   "snapshotRecastVoteHelper": "Todavía puede cambiar su voto hasta que finalice el periodo de votación.",
-  "modifyGovernanceSetAzoriusProposalPendingMessage": "Presentar una propuesta para modificar la gobernanza...",
+  "modifyGovernanceSetGovernorProposalPendingMessage": "Presentar una propuesta para modificar la gobernanza...",
   "errorLoadingParentNode": "Error al cargar el padre"
 }

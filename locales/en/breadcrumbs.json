@@ -8,7 +8,6 @@
   "staking": "Staking",
   "roles": "Roles",
   "treasury": "Treasury",
-  "lips": "LIPs",
   "proposal": "#{{proposalId}} {{proposalTitle}}",
   "proposalTemplates": "Proposal Templates",
   "proposalTemplate": "{{proposalTemplateTitle}}",

@@ -21,6 +21,6 @@
   "failedTokenClaim": "Impossibile richiedere {{symbol}}",
   "successTokenClaim": "Hai richiesto con successo {{amount}} {{symbol}}",
   "snapshotRecastVoteHelper": "È ancora possibile modificare il proprio voto fino al termine del periodo di votazione.",
-  "modifyGovernanceSetAzoriusProposalPendingMessage": "Presentazione della proposta di modifica della governance...",
+  "modifyGovernanceSetGovernorProposalPendingMessage": "Presentazione della proposta di modifica della governance...",
   "errorLoadingParentNode": "Errore nel caricamento del genitore"
 }

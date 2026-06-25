@@ -21,6 +21,6 @@
   "failedTokenClaim": "{{symbol}}の請求に失敗した。",
   "successTokenClaim": "{{amount}}{{symbol}}の請求に成功しました。",
   "snapshotRecastVoteHelper": "投票期間が終了するまで、投票の変更は可能です。",
-  "modifyGovernanceSetAzoriusProposalPendingMessage": "ガバナンス変更案を提出...",
+  "modifyGovernanceSetGovernorProposalPendingMessage": "ガバナンス変更案を提出...",
   "errorLoadingParentNode": "親の読み込みエラー"
 }

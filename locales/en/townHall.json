@@ -1,0 +1,23 @@
+{
+  "townHall": "Town Hall",
+  "townHallSession": "Session",
+  "createSession": "Create Session",
+  "noSessions": "No town hall sessions yet",
+  "sessionTitle": "Title",
+  "sessionTitlePlaceholder": "Enter session title",
+  "sessionDescription": "Description",
+  "sessionDescriptionPlaceholder": "What will be discussed?",
+  "create": "Create",
+  "cancel": "Cancel",
+  "live": "Live",
+  "scheduled": "Scheduled",
+  "ended": "Ended",
+  "mute": "Mute",
+  "unmute": "Unmute",
+  "leave": "Leave",
+  "chat": "Chat",
+  "typeMessage": "Type a message...",
+  "participants": "Participants",
+  "presenter": "Presenter",
+  "waitingForPresenter": "Waiting for presenter..."
+}
