@@ -1,4 +1,4 @@
-import{c as v,d as y,O as w,M as s,e as h,A as k,E as g,x as p,R as u,S as b,T as C,U as x,f as E,h as A,j as L,n as T,r as m,k as N}from"./index-TnDbjjQs.js";const O=v`
+import{c as v,d as y,O as w,M as s,e as h,A as k,E as g,x as p,R as u,S as b,T as C,U as x,f as E,h as A,j as L,n as T,r as m,k as N}from"./index-CPDstpja.js";const O=v`
   :host {
     z-index: var(--w3m-z-index);
     display: block;
@@ -164,4 +164,4 @@ import{c as v,d as y,O as w,M as s,e as h,A as k,E as g,x as p,R as u,S as b,T a
         pointer-events: auto;
       }
     `,document.head.appendChild(e)}onScrollUnlock(){const e=document.head.querySelector(`style[data-w3m="${f}"]`);e&&e.remove()}onAddKeyboardListener(){var t;this.abortController=new AbortController;const e=(t=this.shadowRoot)==null?void 0:t.querySelector("wui-card");e==null||e.focus(),window.addEventListener("keydown",o=>{if(o.key==="Escape")this.handleClose();else if(o.key==="Tab"){const{tagName:a}=o.target;a&&!a.includes("W3M-")&&!a.includes("WUI-")&&(e==null||e.focus())}},this.abortController)}onRemoveKeyboardListener(){var e;(e=this.abortController)==null||e.abort(),this.abortController=void 0}async onNewAddress(e){const t=L.getPlainAddress(e);this.caipAddress=e,await b.initializeIfEnabled(),(!t||this.enableEmbedded)&&s.close()}onNewNetwork(e){var a,i,n,l;if(!this.caipAddress){this.caipNetwork=e,u.goBack();return}const t=(i=(a=this.caipNetwork)==null?void 0:a.caipNetworkId)==null?void 0:i.toString(),o=(n=e==null?void 0:e.caipNetworkId)==null?void 0:n.toString();t&&o&&t!==o&&((l=this.caipNetwork)==null?void 0:l.name)!=="Unknown Network"&&u.goBack(),this.caipNetwork=e}};r.styles=O;d([T({type:Boolean})],r.prototype,"enableEmbedded",void 0);d([m()],r.prototype,"open",void 0);d([m()],r.prototype,"caipAddress",void 0);d([m()],r.prototype,"caipNetwork",void 0);d([m()],r.prototype,"shake",void 0);r=d([N("w3m-modal")],r);export{r as W3mModal};
-//# sourceMappingURL=w3m-modal-BNy6trC_.js.map
+//# sourceMappingURL=w3m-modal-N_mY_i6x.js.map
