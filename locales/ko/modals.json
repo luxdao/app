@@ -63,5 +63,8 @@
   "confirmTransactionTitle": "거래 확인",
   "transactionBuilderTitle": "트랜잭션 빌드",
   "transcationBuilderActionCardTitle": "트랜잭션 빌더",
-  "transactionBuilderActionCardSub": "템플릿을 사용하여 하나 이상의 트랜잭션 만들기"
+  "transactionBuilderActionCardSub": "템플릿을 사용하여 하나 이상의 트랜잭션 만들기",
+  "postBountyTitle": "Post a Bounty",
+  "claimBountyTitle": "Claim Bounty",
+  "submitWorkTitle": "Submit Work"
 }

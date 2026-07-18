@@ -63,5 +63,8 @@
   "confirmTransactionTitle": "トランザクションの確認",
   "transactionBuilderTitle": "取引構築",
   "transcationBuilderActionCardTitle": "トランザクション・ビルダー",
-  "transactionBuilderActionCardSub": "テンプレートを使用して1つまたは複数のトランザクションを作成する"
+  "transactionBuilderActionCardSub": "テンプレートを使用して1つまたは複数のトランザクションを作成する",
+  "postBountyTitle": "Post a Bounty",
+  "claimBountyTitle": "Claim Bounty",
+  "submitWorkTitle": "Submit Work"
 }

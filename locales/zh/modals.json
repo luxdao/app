@@ -63,5 +63,8 @@
   "confirmTransactionTitle": "确认交易",
   "transactionBuilderTitle": "建立交易",
   "transcationBuilderActionCardTitle": "交易生成器",
-  "transactionBuilderActionCardSub": "使用模板创建一个或多个交易"
+  "transactionBuilderActionCardSub": "使用模板创建一个或多个交易",
+  "postBountyTitle": "Post a Bounty",
+  "claimBountyTitle": "Claim Bounty",
+  "submitWorkTitle": "Submit Work"
 }

@@ -1,4 +1,7 @@
 {
+  "postBountyTitle": "Post a Bounty",
+  "claimBountyTitle": "Claim Bounty",
+  "submitWorkTitle": "Submit Work",
   "delegateTitle": "Delegate Voting Tokens",
   "titleBalance": "Balance",
   "titleLockedBalance": "Locked Balance",

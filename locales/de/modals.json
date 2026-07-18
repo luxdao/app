@@ -63,5 +63,8 @@
   "confirmTransactionTitle": "Bestätigen Sie die Transaktion",
   "transactionBuilderTitle": "Transaktion(en) erstellen",
   "transcationBuilderActionCardTitle": "Transaction Builder",
-  "transactionBuilderActionCardSub": "Eine oder mehrere Transaktionen mit Hilfe einer Vorlage erstellen"
+  "transactionBuilderActionCardSub": "Eine oder mehrere Transaktionen mit Hilfe einer Vorlage erstellen",
+  "postBountyTitle": "Post a Bounty",
+  "claimBountyTitle": "Claim Bounty",
+  "submitWorkTitle": "Submit Work"
 }

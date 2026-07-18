@@ -63,5 +63,8 @@
   "confirmTransactionTitle": "Подтвердите транзакцию",
   "transactionBuilderTitle": "Постройте транзакцию(и)",
   "transcationBuilderActionCardTitle": "Конструктор транзакций",
-  "transactionBuilderActionCardSub": "Создайте одну или несколько транзакций с помощью шаблона"
+  "transactionBuilderActionCardSub": "Создайте одну или несколько транзакций с помощью шаблона",
+  "postBountyTitle": "Post a Bounty",
+  "claimBountyTitle": "Claim Bounty",
+  "submitWorkTitle": "Submit Work"
 }
