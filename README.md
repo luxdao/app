@@ -1,34 +1,56 @@
-# vote — RETIRED
+# vote
 
-**lux.vote is built from [`luxfi/dao`](https://github.com/luxfi/dao). Nothing is built here.**
+The governance interface for lux.vote, built on `@hanzo/gui`.
 
-This repo held a hand-committed static build of the governance app plus a `CNAME`
-claiming `lux.vote` and a GitHub Pages workflow. It was neither the source nor the
-thing serving the domain, which made it a duplicate that could only ever drift —
-and, because of the `CNAME`, one that could take the domain over if Pages were
-ever enabled. Both are now removed.
+Every figure on every screen is read from the chain when the screen opens.
+Nothing is seeded, cached or illustrative, and the interface holds no key —
+you sign every transaction in your own wallet.
 
-## Where governance actually lives
+## Running it
 
-| Concern | Home |
+```
+pnpm install
+pnpm dev        # http://127.0.0.1:5288
+pnpm verify     # typecheck, unit tests, build, then the browser suite against the build
+```
+
+`pnpm verify` is the gate. It runs the browser suite against the **built**
+output rather than the dev server, because a suite that never bundles says
+nothing about whether the thing ships — a missing export in an optional peer
+took this build down while the dev server stayed green.
+
+## Screens
+
+| Route | What it reads |
 | --- | --- |
-| App source | [`luxdao/app`](https://github.com/luxdao/app), the `app` submodule of `luxfi/dao` |
-| Governance contracts | [`luxdao/contracts`](https://github.com/luxdao/contracts) and `luxfi/standard` `contracts/governance/` |
-| Build + publish | `luxfi/dao` `.github/workflows/vote.yml` → `ghcr.io/luxfi/dao-vote` |
-| Brands | one app, white-labelled by hostname: `lux.vote` · `zoo.vote` · `pars.vote` |
+| `/` | Governor parameters, the proposal count, and whether anyone can vote |
+| `/proposals` | Every `ProposalCreated` log, with each proposal's live state and tally |
+| `/proposals/:id` | One proposal, its window and its votes; casts a vote |
+| `/proposals/new` | Opens a proposal, after saying what it takes to open one |
+| `/delegate` | Balance against voting power, delegation, and the vote-escrow lock |
+| `/treasury` | Timelock delay and roles, and what the treasury contracts hold |
+| `/work` | The bounty board and the contribution ledger |
+| `/roles` | The role registry — ids, parents, wearer counts |
+| `/karma` | Soulbound reputation: supply, cap, and your own standing |
+| `/gauges` | Fee direction, weighted by vote-escrow |
+| `/deployment` | Every address on record, on all four chains, asked of its own chain |
+| `/settings` | Governance parameters, the endpoint, theme and type |
 
-## Why it was dead, measured
+## The rule
 
-The bundle committed here was already stale. Its `index.html` referenced
-`assets/index-CPDstpja.js`; the live site referenced `assets/index-zWQb2CFA.js`.
-Requesting the committed asset from lux.vote returned `200` — but with
-`content-type: text/html` and 3248 bytes, byte-identical to the response for a
-deliberately bogus path. That is the SPA fallback, not the asset. The commit here
-had not been what serves lux.vote for some time.
+Four readings, never two:
 
-`vote.lux.network`, a separate Pars-branded SPA that advertised undeployed
-Governor and vLUX addresses, is likewise retired and 308-redirects here.
+- **deployed** — code was found at the address
+- **not deployed** — the chain answered and there is no code there
+- **not read** — the call was refused or timed out; nothing is known either way
+- **no record** — no file names an address for this contract on this chain
 
-## If you are looking for the old build
+A contract with no code answers a call with empty data rather than an error, so
+an interface that does not ask the question cannot tell an absent contract from
+an idle one. `/deployment` asks it for every address, on every chain, on load.
 
-It is in this repo's history. Do not restore it — rebuild from `luxfi/dao` instead.
+`e2e/honesty.spec.ts` enforces this against the rendered page.
+
+## Licence
+
+Lux Ecosystem Licence. See `LICENSE`.

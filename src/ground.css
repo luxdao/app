@@ -1,0 +1,26 @@
+/* The ground the page is painted on. <body> is in the document and not in the
+   component tree, so this is the one thing on this surface with nowhere else to
+   live. Everything else that would be here is a prop on the thing it describes.
+
+   There is no utility framework in this build and no stylesheet of classes to
+   scan — the engine draws through style props, so these four rules are the
+   whole of the hand-written CSS. */
+body {
+  margin: 0;
+  background: var(--color-bg-body, #0a0a0a);
+  color: var(--color-text-primary, #fafafa);
+  font-family: 'Zen', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A screen's own header at phone widths. A grid item's floor is its content, so
+   a header holding one long unbreakable string can be wider than the column it
+   sits in and take the document with it. */
+@media (max-width: 30rem) {
+  main header,
+  main header > div {
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
