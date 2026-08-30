@@ -1,4 +1,5 @@
 import { Button } from '@hanzogui/button'
+import { LX } from './lx'
 import { Popover, PopoverContent, PopoverTrigger } from '@hanzogui/popover'
 import { XStack, YStack } from '@hanzogui/stacks'
 import { SizableText } from '@hanzogui/text'
@@ -139,8 +140,15 @@ export function Nav() {
             color={plain}
             whiteSpace="nowrap"
             flexShrink={0}
+            gap="$2"
+            aria-label="Lux Vote"
           >
-            Lux Vote
+            {/* Drawn, not fetched — an <img> lands after a round trip and shifts
+                the row it sits in, on the first thing a person looks at. It
+                takes currentColor, so it moves with the theme rather than with
+                the desktop. */}
+            <LX />
+            Vote
           </SizableText>
           <XStack gap="$4" display="none" $gtSm={{ display: 'flex' }} alignItems="center" flexWrap="wrap">
             {WHERE.map(([to, label]) => (
