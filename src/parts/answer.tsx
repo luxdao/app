@@ -13,6 +13,9 @@ import { bad, line, plain, quiet, surface } from './paint'
  * collapse always favours the reassuring reading: an empty list looks like a
  * young DAO rather than an absent one.
  */
+/** A subject at the start of a sentence. `what` reads mid-sentence elsewhere. */
+const up = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
 export function Answer({ title, detail }: { title: string; detail?: ReactNode }) {
   return (
     <YStack
@@ -65,15 +68,29 @@ export function Reading<T>({
     )
   }
 
+  if (of.at === 'unrecorded') {
+    return (
+      <Answer
+        title={`No address is recorded for ${what} on this chain`}
+        detail={
+          <>
+            This is a statement about our own records rather than about the chain: nothing here has
+            been asked of it, so nothing is known about whether such a contract exists.
+          </>
+        }
+      />
+    )
+  }
+
   if (of.at === 'absent') {
     return (
       <Answer
-        title={`${what} is not deployed on this chain`}
+        title={`${up(what)} is not deployed on this chain`}
         detail={
           <>
-            The address on record answers <Mono>eth_getCode</Mono> with no code. That is not an
-            empty {what} — there is nothing at {of.address} to be empty. Nothing on this screen is a
-            statement about governance.
+            The address on record — <Mono>{of.address}</Mono> — answers <Mono>eth_getCode</Mono> with
+            no code, so there is nothing there to be empty. This is not an empty register; it is the
+            absence of the contract that would keep one.
           </>
         }
       />
@@ -91,7 +108,7 @@ export function Reading<T>({
         backgroundColor={surface}
       >
         <SizableText size="$4" color={plain}>
-          {what} could not be read
+          {up(what)} could not be read
         </SizableText>
         <Paragraph size="$3" margin={0} color={quiet}>
           The chain was asked and did not answer, so this screen knows nothing either way. A refusal

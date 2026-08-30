@@ -20,7 +20,15 @@ export interface Treasury {
   /** Who may schedule, execute and cancel. An open executor is address zero. */
   governorProposes: boolean
   openExecutor: boolean
-  adminRenounced: boolean
+  /**
+   * Whether the Timelock holds DEFAULT_ADMIN_ROLE over itself. This is the
+   * OpenZeppelin v5 default and is not a finding — it is reported as the fact
+   * it is. Whether any OTHER account holds that role cannot be answered by a
+   * call: AccessControl has no enumeration, so it would take a log scan, and
+   * claiming "admin renounced" from this one read would be asserting something
+   * nobody measured.
+   */
+  selfAdministered: boolean
   holdings: Holding[]
 }
 
@@ -41,7 +49,7 @@ export async function treasury(v: Venue): Promise<Read<Treasury>> {
     ])
 
     const governor = v.at.governor
-    const [governorProposes, openExecutor, anyAdmin] = await Promise.all([
+    const [governorProposes, openExecutor, selfAdministered] = await Promise.all([
       governor ? one<boolean>('hasRole', [proposer, governor]) : Promise.resolve(false),
       one<boolean>('hasRole', [executor, ZERO]),
       one<boolean>('hasRole', [admin, address]),
@@ -54,6 +62,6 @@ export async function treasury(v: Venue): Promise<Read<Treasury>> {
       holdings.push({ what, address: at, balance })
     }
 
-    return { minDelay, governorProposes, openExecutor, adminRenounced: !anyAdmin, holdings }
+    return { minDelay, governorProposes, openExecutor, selfAdministered, holdings }
   })
 }

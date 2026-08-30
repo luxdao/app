@@ -39,6 +39,11 @@ export default function Treasury() {
               title="The gate"
               note="A passed proposal does not move funds; it schedules a call that the Timelock releases after its delay."
             >
+              <Paragraph size="$3" margin={0} color={quiet}>
+                Whether any account beyond the Timelock holds its admin role is not shown, because it
+                cannot be read: role membership is not enumerable, so answering would take a log scan
+                and asserting it from one call would be a claim nobody measured.
+              </Paragraph>
               <Facts
                 rows={[
                   fact('Minimum delay', duration(v.minDelay, 'mode=timestamp')),
@@ -53,10 +58,8 @@ export default function Treasury() {
                     <Mark tone="plain">{v.openExecutor ? 'open to anyone' : 'restricted'}</Mark>,
                   ),
                   fact(
-                    'Timelock admin',
-                    <Mark tone={v.adminRenounced ? 'good' : 'warn'}>
-                      {v.adminRenounced ? 'renounced' : 'still held'}
-                    </Mark>,
+                    'Administers itself',
+                    <Mark tone="plain">{v.selfAdministered ? 'yes' : 'no'}</Mark>,
                   ),
                 ]}
               />

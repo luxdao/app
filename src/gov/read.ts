@@ -7,18 +7,26 @@
  * different sentences and a governance screen that renders them the same has
  * told the reader something nobody measured.
  *
- *  reading — the call is in flight
- *  absent  — eth_getCode returned nothing; there is no contract at that address
- *  failed  — the call was refused, timed out, or reverted; we do not know
- *  read    — the chain answered, and `value` is the answer, empty or not
+ *  reading    — the call is in flight
+ *  unrecorded — no file names an address for this contract on this chain; a
+ *               statement about our own records, not about the chain
+ *  absent     — an address is on record and eth_getCode returned no code at it
+ *  failed     — the call was refused, timed out, or reverted; we do not know
+ *  read       — the chain answered, and `value` is the answer, empty or not
+ *
+ * The first two are separated because they are different sentences and the
+ * screens have to say the right one: "we never recorded where this is" is not
+ * "this is not deployed".
  */
 export type Read<T> =
   | { at: 'reading' }
+  | { at: 'unrecorded' }
   | { at: 'absent'; address: string }
   | { at: 'failed'; why: string }
   | { at: 'read'; value: T }
 
 export const reading = <T,>(): Read<T> => ({ at: 'reading' })
+export const unrecorded = <T,>(): Read<T> => ({ at: 'unrecorded' })
 export const absent = <T,>(address: string): Read<T> => ({ at: 'absent', address })
 export const failed = <T,>(why: unknown): Read<T> => ({ at: 'failed', why: why instanceof Error ? why.message : String(why) })
 export const read = <T,>(value: T): Read<T> => ({ at: 'read', value })

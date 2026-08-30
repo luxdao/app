@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { absent, attempt, failed, read } from './read'
+import { absent, attempt, failed, read, unrecorded } from './read'
 
 /**
  * The four outcomes are the whole point of this module, so what is tested is
@@ -13,6 +13,19 @@ describe('the four readings', () => {
     expect(nothing.at).toBe('read')
     expect(gone.at).toBe('absent')
     expect(nothing).not.toEqual(gone)
+  })
+
+  /**
+   * "We never recorded where this is" is a statement about our own records;
+   * "the chain has no code there" is a statement about the chain. Collapsing
+   * them lets a missing entry in a manifest be reported as a missing contract.
+   */
+  it('keeps a missing record distinct from a missing contract', () => {
+    const noRecord = unrecorded<number>()
+    const noCode = absent<number>('0xabc')
+    expect(noRecord.at).toBe('unrecorded')
+    expect(noCode.at).toBe('absent')
+    expect(noRecord).not.toEqual(noCode)
   })
 
   it('carries the address that had no code, so a screen can name it', () => {

@@ -1,6 +1,6 @@
 import { createPublicClient, http, type Address, type PublicClient } from 'viem'
 import type { Slot, Venue } from './chain'
-import { absent, attempt, failed, read, type Read } from './read'
+import { absent, attempt, failed, read, unrecorded, type Read } from './read'
 
 const clients = new Map<number, PublicClient>()
 
@@ -25,7 +25,7 @@ export function client(v: Venue): PublicClient {
  */
 export async function presence(v: Venue, slot: Slot): Promise<Read<{ address: Address; size: number }>> {
   const address = v.at[slot]
-  if (!address) return { at: 'absent', address: `no address recorded for ${slot} on ${v.name}` }
+  if (!address) return unrecorded()
   try {
     const code = await client(v).getCode({ address })
     const size = code ? (code.length - 2) / 2 : 0
