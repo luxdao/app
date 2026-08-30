@@ -27,7 +27,9 @@ permissions:
 
 jobs:
   build:
-    runs-on: [self-hosted, linux, amd64]
+    # The canonical label is <org>-<os>-<arch> — hanzo/.github/RUNNERS.md says
+    # to author against it and treat everything else as a compat alias.
+    runs-on: lux-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
