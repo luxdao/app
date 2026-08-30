@@ -120,6 +120,31 @@ SDKs, which are optional peers. Use `@luxwallet/connect/nonce` and
 `@luxwallet/connect/evm/connect`. The dev server resolves the barrel happily;
 only `vite build` finds it.
 
+## The two high advisories, and why they stay
+
+`pnpm audit` reports two high advisories, both `image-size`, reached only as:
+
+    @hanzo/gui -> @hanzogui/floating -> @floating-ui/react-native
+      -> react-native -> @react-native/community-cli-plugin -> metro -> image-size
+
+That is React Native's **native bundler**. Verified: `image-size`, `ICNS`,
+`metro-runtime` and `community-cli-plugin` appear in **0** files of `dist/`, and
+so does any reference to real `react-native` — the vite alias sends it to
+`react-native-web` before anything resolves. **There is no patched version**
+(`patched: <0.0.0`).
+
+Removing it was tried and reverted. `auto-install-peers=false` clears the audit
+completely and halves the tree, and the build still passes — but `tsc` then
+fails, because `@hanzogui/element` publishes `"types": "./src/index.ts"`, raw
+TypeScript, and 46 files across the engine import types from `react-native`. So
+it is a genuine **type-level** dependency of the design system, not an optional
+extra.
+
+Do not suppress the audit and do not hand-write a `react-native` type shim to
+make the number go away. The fix belongs upstream: either `@hanzogui/*` ships
+`.d.ts` instead of `src`, or `@hanzogui/floating` stops peering on
+`@floating-ui/react-native` for web consumers.
+
 ## The gates, and the one that was vacuous
 
 `e2e/` carries four suites: `gui` (no utility classes, one `h1`, every control
