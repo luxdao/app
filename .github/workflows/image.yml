@@ -5,6 +5,11 @@ name: Image
 # It used to be built from luxfi/dao, whose `app` submodule held an interface
 # derived from Decent DAO. That app is replaced; this one is the source.
 #
+# This publishes LUX only. Zoo's image is ghcr.io/zooai/vote, built by
+# zooai/vote from this same source — each org's images live in its own registry
+# and never in another's, so one org losing access cannot strand another's
+# deploy.
+#
 # The tag shape is `lux-<short sha>` because that is what
 # luxfi/universe deploy/lux-vote/lux-vote.yaml pins. A declaration reads a tag;
 # it does not follow a branch. Publishing to a repository no declaration reads
@@ -23,20 +28,6 @@ permissions:
 jobs:
   build:
     runs-on: [self-hosted, linux, amd64]
-    strategy:
-      fail-fast: false
-      # One app, every brand — the same bundle built once per DAO with a
-      # different home, rather than a fork per DAO that drifts. A brand added
-      # here needs a venue of the same key in src/gov/chain.ts; the build
-      # refuses an unknown one.
-      matrix:
-        include:
-          - brand: lux
-            home: lux
-            site: https://lux.vote
-          - brand: zoo
-            home: zoo
-            site: https://zoo.vote
     steps:
       - uses: actions/checkout@v4
 
@@ -64,7 +55,7 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=sha,format=short,prefix=${{ matrix.brand }}-
+            type=sha,format=short,prefix=lux-
 
       - name: Build & push
         uses: docker/build-push-action@v6
@@ -74,12 +65,12 @@ jobs:
           platforms: linux/amd64
           push: true
           build-args: |
-            VITE_VOTE_HOME=${{ matrix.home }}
+            VITE_VOTE_HOME=lux
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Say what to pin
         run: |
-          echo "Built ${{ matrix.brand }} (${{ matrix.site }}): ${{ steps.meta.outputs.tags }}"
+          echo "Built lux.vote: ${{ steps.meta.outputs.tags }}"
           echo "Pin it in luxfi/universe deploy/lux-vote/lux-vote.yaml under image.tag."
           echo "Nothing deploys until that file names this tag."
