@@ -45,7 +45,7 @@ in the vite `define` block — visible in the build, and not losable with a `.en
 
 ## Endpoints: use the path form or a browser sees nothing
 
-Every venue's RPC is `https://api.<org>.network/v1/bc/C/rpc`, never the bare
+Every venue's RPC is `https://api.<org>.network/v1/chain/C/rpc`, never the bare
 host. The bare host serves the same chain to `curl` and refuses a browser:
 its gateway answers the CORS preflight with **405** and sends no
 `access-control-allow-origin`. That arrives as a network error carrying no
