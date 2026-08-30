@@ -25,6 +25,12 @@ COPY . .
 ARG VITE_HANZO_TELEMETRY=off
 ENV VITE_HANZO_TELEMETRY=$VITE_HANZO_TELEMETRY
 
+# Which DAO this image is. The same source builds lux.vote and zoo.vote; an
+# unknown key fails the build rather than shipping a site that opens on the
+# wrong chain and reports real figures about somebody else's governance.
+ARG VITE_VOTE_HOME=lux
+ENV VITE_VOTE_HOME=$VITE_VOTE_HOME
+
 RUN NODE_OPTIONS=--max-old-space-size=8192 pnpm exec vite build
 
 FROM node:20-alpine AS production

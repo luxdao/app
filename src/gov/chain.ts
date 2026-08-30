@@ -128,5 +128,23 @@ export const VENUES: readonly Venue[] = [
 
 export const venue = (key: string): Venue | undefined => VENUES.find((v) => v.key === key)
 
-/** The chain this build opens on. */
-export const HOME = VENUES[0] as Venue
+/**
+ * The chain this build opens on.
+ *
+ * One app, every brand. lux.vote and zoo.vote are the same bundle built twice
+ * with a different home, the way the rest of the estate white-labels — rather
+ * than a fork per DAO that drifts.
+ *
+ * An unknown key throws at build rather than falling back to Lux. A build that
+ * quietly opened on the wrong chain would ship a Zoo site reading Lux's
+ * governor, and every figure on it would be real and about the wrong DAO —
+ * which is the one failure a reader could not detect.
+ */
+const wanted = import.meta.env.VITE_VOTE_HOME ?? 'lux'
+const home = venue(wanted)
+if (!home) {
+  throw new Error(
+    `VITE_VOTE_HOME names "${wanted}", which is not a venue. Known: ${VENUES.map((v) => v.key).join(', ')}.`,
+  )
+}
+export const HOME: Venue = home

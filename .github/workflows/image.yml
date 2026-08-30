@@ -23,6 +23,20 @@ permissions:
 jobs:
   build:
     runs-on: [self-hosted, linux, amd64]
+    strategy:
+      fail-fast: false
+      # One app, every brand — the same bundle built once per DAO with a
+      # different home, rather than a fork per DAO that drifts. A brand added
+      # here needs a venue of the same key in src/gov/chain.ts; the build
+      # refuses an unknown one.
+      matrix:
+        include:
+          - brand: lux
+            home: lux
+            site: https://lux.vote
+          - brand: zoo
+            home: zoo
+            site: https://zoo.vote
     steps:
       - uses: actions/checkout@v4
 
@@ -50,7 +64,7 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=sha,format=short,prefix=lux-
+            type=sha,format=short,prefix=${{ matrix.brand }}-
 
       - name: Build & push
         uses: docker/build-push-action@v6
@@ -59,11 +73,13 @@ jobs:
           file: Dockerfile
           platforms: linux/amd64
           push: true
+          build-args: |
+            VITE_VOTE_HOME=${{ matrix.home }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Say what to pin
         run: |
-          echo "Built: ${{ steps.meta.outputs.tags }}"
+          echo "Built ${{ matrix.brand }} (${{ matrix.site }}): ${{ steps.meta.outputs.tags }}"
           echo "Pin it in luxfi/universe deploy/lux-vote/lux-vote.yaml under image.tag."
           echo "Nothing deploys until that file names this tag."
