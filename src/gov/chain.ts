@@ -13,7 +13,7 @@ import { getChain } from '@luxwallet/chains'
  * Identity — name, symbol, EIP-155 id — comes from `@luxwallet/chains` so this
  * file does not become a second roster that drifts from the first.
  *
- * Every endpoint is the `/v1/bc/C/rpc` form and not the bare host, because only
+ * Every endpoint is the `/v1/chain/C/rpc` form and not the bare host, because only
  * the path form answers a browser. `https://api.lux.network` serves the same
  * chain and the same results to curl, but it sits behind a gateway that refuses
  * the CORS preflight with 405 and sends no `access-control-allow-origin`, so a
@@ -63,7 +63,7 @@ export const VENUES: readonly Venue[] = [
     id: 96369,
     key: 'lux',
     ...lux,
-    rpc: 'https://api.lux.network/v1/bc/C/rpc',
+    rpc: 'https://api.lux.network/v1/chain/C/rpc',
     explorer: 'https://explore.lux.network',
     // From deployments/gov-vote/96369.json. This is the set the chain answers
     // for; the set in the retired app's `luxDevnet` block belongs to 96370 and
@@ -85,7 +85,7 @@ export const VENUES: readonly Venue[] = [
     id: 200200,
     key: 'zoo',
     ...zoo,
-    rpc: 'https://api.zoo.network/v1/bc/C/rpc',
+    rpc: 'https://api.zoo.network/v1/chain/C/rpc',
     explorer: 'https://explore.zoo.network',
     // deployments/l2-mainnet/zoo.json records a consensus split: the work
     // market and governance modules reached only one pod of five and are marked
@@ -102,7 +102,7 @@ export const VENUES: readonly Venue[] = [
     id: 494949,
     key: 'pars',
     ...pars,
-    rpc: 'https://api.pars.network/v1/bc/C/rpc',
+    rpc: 'https://api.pars.network/v1/chain/C/rpc',
     explorer: 'https://explore.pars.network',
     // Two records name two different Bounties here. This is the one in
     // deployments/l2-mainnet/pars.json; the DAO repo names another, and that
@@ -117,7 +117,7 @@ export const VENUES: readonly Venue[] = [
     id: 36963,
     key: 'hanzo',
     ...hanzo,
-    rpc: 'https://api.hanzo.network/v1/bc/C/rpc',
+    rpc: 'https://api.hanzo.network/v1/chain/C/rpc',
     explorer: 'https://explore.hanzo.network',
     // deployments/l2-mainnet/hanzo.json carries no contract addresses at all —
     // its contracts block is a note saying none are consensus-confirmed. Only
