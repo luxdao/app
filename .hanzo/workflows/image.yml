@@ -1,0 +1,70 @@
+name: Image
+
+# What lux.vote runs is built here, from this repository.
+#
+# LUX only. Zoo's image is ghcr.io/zooai/vote, built by zooai/vote from this
+# same source: each org's images live in its own registry, so an org losing
+# access cannot strand another's deploy.
+#
+# The tag is what luxfi/universe deploy/lux-vote/lux-vote.yaml pins. A
+# declaration reads a tag, not a branch, and an image published where no
+# declaration reads is invisible.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: [lux-linux-amd64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          driver-opts: |
+            network=host
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GH_TOKEN != '' && secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/luxfi/vote
+          # No floating tag. A cluster pins a version; `latest` on a registry is
+          # a moving target that makes "what is deployed" unanswerable.
+          flavor: |
+            latest=false
+          tags: |
+            type=sha,format=short,prefix=lux-
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            VITE_VOTE_HOME=lux
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Say what to pin
+        run: |
+          echo "Built lux.vote: ${{ steps.meta.outputs.tags }}"
+          echo "Pin it in luxfi/universe deploy/lux-vote/lux-vote.yaml under image.tag."
+          echo "Nothing deploys until that file names this tag."
