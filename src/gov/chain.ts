@@ -78,7 +78,13 @@ export const VENUES: readonly Venue[] = [
       vlux: '0x9aAB909D3e673CCBCfEacF96F96585B8e75bf1D9',
       votingLux: '0x160cD157d1f3A178d74962c28D71AdADb7AEDFcd',
       gauges: '0x7F17E6430A6ea24AF5472e89Fc86e93C4F57073b',
-      safe: '0xDA215aab35CD29097B0d454042f676F1dA02497F',
+      // 0xDA215aab35CD29097B0d454042f676F1dA02497F stood here and is zero bytes
+      // on 96369. This one answers: Safe 1.5.0, threshold 1, sole owner
+      // 0x9011e888251ab053b7bd1cdb598db4f9ded94714 — the same owner Hanzo's
+      // Safe carries. Checked with eth_getCode and getOwners, which is the only
+      // thing that settles an address here; a plausible-looking one that holds
+      // no code reads on the Treasury screen as a real holding of zero.
+      safe: '0x4CB86Cbb76Ed31E68825F9e24480EEdF5B9b1951',
     },
   },
   {

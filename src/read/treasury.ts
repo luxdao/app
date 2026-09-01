@@ -55,11 +55,19 @@ export async function treasury(v: Venue): Promise<Read<Treasury>> {
       one<boolean>('hasRole', [admin, address]),
     ])
 
-    const holdings: Holding[] = []
-    for (const [what, at] of [['Timelock', address], ['DAO Safe', v.at.safe]] as const) {
-      if (!at) continue
-      const balance = await c.getBalance({ address: at as `0x${string}` })
-      holdings.push({ what, address: at, balance })
+    // A HOLDING IS A CONTRACT THAT EXISTS. getBalance answers for any address,
+    // deployed or not, so an address merely recorded somewhere renders here as
+    // a real holding of zero — which is a claim about the treasury nobody
+    // measured. Three of the four venues named a Safe that is zero bytes on
+    // their own chain. The Timelock is already established by the presence read
+    // above; the Safe gets the same test, and a recorded address that holds no
+    // code is simply not a holding. Where it stands and what the chain answers
+    // is the Deployment screen's subject, and it is reported there.
+    const holdings: Holding[] = [{ what: 'Timelock', address, balance: await c.getBalance({ address }) }]
+    const safe = await presence(v, 'safe')
+    if (safe.at === 'read') {
+      const at = safe.value.address
+      holdings.push({ what: 'DAO Safe', address: at, balance: await c.getBalance({ address: at }) })
     }
 
     return { minDelay, governorProposes, openExecutor, selfAdministered, holdings }
