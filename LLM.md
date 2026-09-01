@@ -90,6 +90,35 @@ ever created (full log scan from the Governor's creation block, 1,095,842), and
 zero delegated voting power — 100% of the 100M gLUX supply sits with one address
 that has never delegated, against a 4M quorum.
 
+## What stands between deployed and live, measured 2026-08-31
+
+The machine is correctly assembled. Read from the chain today:
+
+| | |
+| --- | --- |
+| Governor | `mode=timestamp`; delay 86,400s, period 604,800s, threshold 100 gLUX, quorum 4% |
+| Timelock | Governor holds PROPOSER; EXECUTOR granted to `address(0)`, so anyone executes; `0x9011` keeps CANCELLER; its own ADMIN and PROPOSER were renounced; the timelock administers itself; minDelay 86,400s |
+| gLUX | "Lux Governance", 100,000,000 supply, all of it at `0x9011` |
+| Delegation | `delegates(0x9011)` is the zero address; `getVotes` is 0; **no DelegateChanged event has ever been emitted** |
+
+The timelock hand-over is done properly and is not the blocker. Three things are:
+
+1. **Nobody can propose.** The threshold is measured in *votes*, not balance, and
+   every address has zero votes because nobody has delegated. One transaction —
+   `delegate()` on the votes token — turns a balance into voting power. Until it
+   happens the Governor cannot be used at all, by anyone.
+2. **One address is the whole electorate.** After that delegation `0x9011` alone
+   holds 100M against a 4M quorum, so it passes anything unopposed. Distribution
+   is the transition; delegation only starts the engine.
+3. **The token is still the deployer's.** `owner()` is `0x9011`, the runtime
+   carries `mint(address,uint256)` and there is no `cap()`. The owner can mint
+   the electorate at will, so the supply figure above is a current reading rather
+   than a bound. Transferring ownership to the timelock — or renouncing it — is
+   what makes the 100M mean anything.
+
+The treasury is empty: the timelock holds 0 LUX and 0 gLUX. Governance presently
+controls no assets, so passing a proposal would move nothing.
+
 ## The contracts are not what the prose says
 
 Build ABIs from `luxfi/standard` `out/**` (Foundry artifacts), never from
