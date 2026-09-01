@@ -45,7 +45,7 @@ in the vite `define` block — visible in the build, and not losable with a `.en
 
 ## Endpoints: use the path form or a browser sees nothing
 
-Every venue's RPC is `https://api.<org>.network/v1/bc/C/rpc`, never the bare
+Every venue's RPC is `https://api.<org>.network/v1/chain/C/rpc`, never the bare
 host. The bare host serves the same chain to `curl` and refuses a browser:
 its gateway answers the CORS preflight with **405** and sends no
 `access-control-allow-origin`. That arrives as a network error carrying no
@@ -53,12 +53,18 @@ chain, so every screen reports the Governor unreadable while the Governor is
 fine. The three other chains send `access-control-allow-origin: *` at the root;
 Lux does not. The path form works on all four.
 
-`bc`, not `chain`, until the nodes are redeployed. The segment is being renamed —
-`ChainAliasPrefix` is `"chain"` in `@luxfi/constants` v1.6.4, because `bc` was
-short for blockchain and a Lux chain is not always one, and luxd serves both
-while callers move. The running nodes are older than that release: measured
-today, `/v1/bc/C/rpc` answers 200 and `/v1/chain/C/rpc` returns 404. Write what
-answers.
+`chain`, and it does not answer yet. The segment was renamed — `ChainAliasPrefix`
+is `"chain"` from `@luxfi/constants` v1.6.4, because `bc` was short for
+blockchain and a Lux chain is not always one — and node v1.36.179 removed the
+old spelling rather than serving both. The estate was converted to `/v1/chain`
+deliberately, ahead of the fleet.
+
+The running nodes are older than that release. Measured 2026-09-01 against
+`api.lux.network`: `/v1/bc/C/rpc` answers 200 and `/v1/chain/C/rpc` returns 404,
+and the same holds for lux-test, zoo and hanzo. So these screens stay unreadable
+until the gateways redeploy. That is a known interim, not a bug to work around
+by writing `bc` back — the gateway's route table already matches, so one
+redeploy moves both ends at once.
 
 ## What is actually deployed, measured 2026-08-30
 
