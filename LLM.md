@@ -53,18 +53,23 @@ chain, so every screen reports the Governor unreadable while the Governor is
 fine. The three other chains send `access-control-allow-origin: *` at the root;
 Lux does not. The path form works on all four.
 
-`chain`, and it does not answer yet. The segment was renamed — `ChainAliasPrefix`
+The segment in that path is `chain`, and it does not answer yet. It was renamed — `ChainAliasPrefix`
 is `"chain"` from `@luxfi/constants` v1.6.4, because `bc` was short for
 blockchain and a Lux chain is not always one — and node v1.36.179 removed the
 old spelling rather than serving both. The estate was converted to `/v1/chain`
 deliberately, ahead of the fleet.
 
-The running nodes are older than that release. Measured 2026-09-01 against
-`api.lux.network`: `/v1/bc/C/rpc` answers 200 and `/v1/chain/C/rpc` returns 404,
-and the same holds for lux-test, zoo and hanzo. So these screens stay unreadable
-until the gateways redeploy. That is a known interim, not a bug to work around
-by writing `bc` back — the gateway's route table already matches, so one
-redeploy moves both ends at once.
+The running nodes are older than that release: `info.getNodeVersion` answers
+luxd/1.36.148, thirty-one patches short of the one that renames the segment.
+Measured 2026-09-01, `/v1/bc/C/rpc` answers 200 and `/v1/chain/C/rpc` returns
+404 on all four of api.lux, api.zoo, api.pars and api.hanzo — each returning
+its own chain id, so the fleet is healthy and simply older than the spelling.
+
+These screens therefore stay unreadable until the fleet reaches v1.36.179. That
+is a known interim, not a bug to work around by writing `bc` back. It is also
+not a redeploy of the gateways: the route tables already match, and what is
+short is luxd itself, so closing it is a rolling upgrade of mainnet validators
+and is decided on that basis rather than on this repository's.
 
 ## What is actually deployed, measured 2026-08-30
 

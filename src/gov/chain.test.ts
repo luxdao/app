@@ -14,7 +14,7 @@ describe('the chain registry', () => {
    * Governor was fine.
    */
   it('reaches every chain by the path form, which is the one a browser may read', () => {
-    for (const v of VENUES) expect(v.rpc).toMatch(/\/v1\/bc\/C\/rpc$/)
+    for (const v of VENUES) expect(v.rpc).toMatch(/^https:\/\/api\.[a-z]+\.network\/v1\/chain\/C\/rpc$/)
   })
 
   it('opens on Lux mainnet', () => {
