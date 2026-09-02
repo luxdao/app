@@ -20,7 +20,7 @@
     "@hanzo/font": "^1.9.3",
     "@hanzo/gui": "^8.3.1",
     "@hanzo/tokens": "^1.0.1",
-    "@hanzo/ui": "^8.27.5",
+    "@hanzo/ui": "^8.27.7",
     "@hanzogui/button": "^8.3.1",
     "@hanzogui/card": "^8.3.1",
     "@hanzogui/config-default": "8.3.1",
