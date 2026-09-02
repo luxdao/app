@@ -40,8 +40,13 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_TOKEN != '' && secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+          # GHCR_USER/GHCR_TOKEN, which is what every other luxfi workflow
+          # that publishes to ghcr.io uses. GITHUB_TOKEN is minted by the forge
+          # and authenticates to the forge; it is not a GitHub credential and
+          # cannot push to GitHub's registry. github.repository_owner is a
+          # repository owner, not a registry account.
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Image metadata
         id: meta
