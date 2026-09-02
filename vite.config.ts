@@ -44,7 +44,7 @@ function head(): Plugin {
 // bundle builds, publishes, deploys, and shows a blank page. The keys are known
 // at config time, so a typo should cost a failed build and not a failed site.
 // Kept in step with VENUES in src/gov/chain.ts.
-const HOMES = ['lux', 'zoo', 'hanzo', 'pars'] as const
+const HOMES = ['lux', 'zoo', 'hanzo', 'pars', 'local'] as const
 const home = process.env.VITE_VOTE_HOME ?? 'lux'
 if (!HOMES.includes(home as (typeof HOMES)[number])) {
   throw new Error(`VITE_VOTE_HOME names "${home}", which is not a venue. Known: ${HOMES.join(', ')}.`)

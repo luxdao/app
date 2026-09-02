@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { HOME, VENUES, venue } from './chain'
 
+/**
+ * The venues a build ships with. A node on this machine is compiled in under
+ * `import.meta.env.DEV`, which is true here, so the registry seen by a test is
+ * one entry longer than the one seen by a reader. Every claim below is about
+ * what ships; the local entry is deliberately outside them, and reaches a
+ * loopback address that no gateway sits in front of.
+ */
+const shipped = VENUES.filter((v) => v.key !== 'local')
+
 describe('the chain registry', () => {
   it('carries the four chains this interface reads', () => {
-    expect(VENUES.map((v) => v.id).sort((a, b) => a - b)).toEqual([36963, 96369, 200200, 494949])
+    expect(shipped.map((v) => v.id).sort((a, b) => a - b)).toEqual([36963, 96369, 200200, 494949])
   })
 
   /**
@@ -19,7 +28,7 @@ describe('the chain registry', () => {
     // whether the segment says `bc` or `chain` is a fact about which luxd the
     // validators are running, and pinning it here means this fails on a
     // deployment move rather than on the mistake it exists to catch.
-    for (const v of VENUES)
+    for (const v of shipped)
       expect(v.rpc).toMatch(/^https:\/\/api\.[a-z-]+\.network\/v1\/(?:bc|chain)\/C\/rpc$/)
   })
 

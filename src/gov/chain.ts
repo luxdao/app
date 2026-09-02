@@ -140,6 +140,31 @@ export const VENUES: readonly Venue[] = [
     // the Safe infrastructure was recorded.
     at: { safe: '0xB68C73BAd0C967Ba6c9b6C0ae0D4A38138F474cb' },
   },
+  // A node on the machine running this, and only there. `import.meta.env.DEV` is
+  // replaced with a literal at build time, so this whole entry is removed from a
+  // production bundle rather than hidden by it: a chain nobody else can reach
+  // must not appear in the picker on a deployed site.
+  //
+  // The addresses are wherever `DeployGovernance` last put them on a fresh
+  // chain — they are deterministic for a given nonce order, not a registry, so
+  // re-deploying in a different order moves them and this needs re-reading.
+  ...(import.meta.env.DEV
+    ? [
+        {
+          id: 96369,
+          key: 'local' as const,
+          name: 'Lux local',
+          symbol: 'LUX',
+          rpc: 'http://127.0.0.1:8545',
+          explorer: null,
+          at: {
+            governor: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+            timelock: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+            votes: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+          },
+        } satisfies Venue,
+      ]
+    : []),
 ] as const
 
 export const venue = (key: string): Venue | undefined => VENUES.find((v) => v.key === key)

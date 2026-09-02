@@ -32,14 +32,27 @@ export interface Proposal {
 }
 
 /**
- * The block each chain's Governor was created in.
+ * The block each venue's Governor was created in.
  *
  * A proposal scan starts here rather than at `earliest`, because a contract
  * cannot log before it exists and the whole-chain form is what a gateway kills.
  * Measured from the creation receipt, not guessed: the Lux Governor's own
  * creation transaction lands in 1,095,842.
+ *
+ * Keyed by venue, not by chain id. A chain id names a network, not a
+ * deployment, and several deployments answer to one: a node on this machine, a
+ * fork, and a governor redeployed after the chain was re-genesised all report
+ * 96369 and were created in entirely different blocks. Keyed by id, a local
+ * chain 164 blocks long is scanned from 1,095,842 — a window that begins past
+ * the head, returns nothing, and renders as "no proposal has ever been
+ * created". That sentence is the one thing this screen must never say wrongly,
+ * and the failure is invisible on the chain the number was measured from,
+ * because there the true answer is also none.
+ *
+ * A venue with no entry starts at 0. That is only affordable on a short chain,
+ * which is exactly the case that has no entry.
  */
-const SINCE: Record<number, bigint> = { 96369: 1_095_842n }
+const SINCE: Record<string, bigint> = { lux: 1_095_842n }
 
 const created = parseAbiItem(
   'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 voteStart, uint256 voteEnd, string description)',
@@ -57,7 +70,7 @@ export async function proposals(v: Venue): Promise<Read<Proposal[]>> {
   const logs = await scan(
     v,
     (from, until) => c.getLogs({ address, event: created, fromBlock: from, toBlock: until }),
-    SINCE[v.id] ?? 0n,
+    SINCE[v.key] ?? 0n,
     to.value,
   )
   if (logs.at !== 'read') return logs
