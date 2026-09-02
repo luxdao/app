@@ -14,7 +14,13 @@ describe('the chain registry', () => {
    * Governor was fine.
    */
   it('reaches every chain by the path form, which is the one a browser may read', () => {
-    for (const v of VENUES) expect(v.rpc).toMatch(/^https:\/\/api\.[a-z]+\.network\/v1\/chain\/C\/rpc$/)
+    // Either segment. What this guards is the path form against the bare host,
+    // which is the difference between a readable response and a CORS refusal;
+    // whether the segment says `bc` or `chain` is a fact about which luxd the
+    // validators are running, and pinning it here means this fails on a
+    // deployment move rather than on the mistake it exists to catch.
+    for (const v of VENUES)
+      expect(v.rpc).toMatch(/^https:\/\/api\.[a-z-]+\.network\/v1\/(?:bc|chain)\/C\/rpc$/)
   })
 
   it('opens on Lux mainnet', () => {
