@@ -21,7 +21,11 @@ permissions:
 
 jobs:
   build:
-    runs-on: [lux-linux-amd64]
+    # lux-build-linux-amd64, not lux-linux-amd64: the second is not a label any
+    # runner advertises (hanzoai/.github RUNNERS.md lists luxfi-linux-amd64,
+    # lux-amd64, lux-build-linux-amd64 and lux-build-amd64), so a job asking for
+    # it queues forever while looking like CI that has not got round to it.
+    runs-on: [lux-build-linux-amd64]
     steps:
       - uses: actions/checkout@v4
 
