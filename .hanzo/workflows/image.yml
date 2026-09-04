@@ -1,13 +1,30 @@
 name: Image
 
-# What lux.vote runs is built here, from this repository.
+# What lux.vote, zoo.vote and hanzo.vote run is built here, from this
+# repository.
 #
-# LUX only. Zoo's image is ghcr.io/zooai/vote, built by zooai/vote from this
-# same source: each org's images live in its own registry, so an org losing
-# access cannot strand another's deploy.
+# ONE SOURCE, THREE TENANTS. The three sites are this bundle built three times
+# with a different VITE_VOTE_HOME. A fork per DAO is the alternative and it
+# drifts: the app being replaced was forked twice and the copies stopped
+# agreeing about what a proposal was.
 #
-# The tag is what luxfi/universe deploy/lux-vote/lux-vote.yaml pins. A
-# declaration reads a tag, not a branch, and an image published where no
+# Each image lands in its OWN org's registry, so a tenant pulls from the org
+# that owns it and a namespace's pull secret only has to reach its own
+# registry. That costs one thing, and it is written here rather than found out:
+# the credential below pushes to all three, so it belongs to an account with
+# package:write in luxfi, zooai and hanzoai. A refusal from one registry fails
+# that leg alone — `fail-fast: false` — and the other two still publish.
+#
+# pars.vote is NOT built here. Pars runs its own fork of this source and its CI
+# publishes ghcr.io/parsdao/vote. The `pars` venue and brand stay declared in
+# this tree because that fork inherits them; the image and the deploy are the
+# fork's.
+#
+# The tag is what each org's declaration pins:
+#   ghcr.io/luxfi/vote    luxfi/universe    deploy/lux-vote/lux-vote.yaml
+#   ghcr.io/zooai/vote    zooai/universe    deploy/zoo-mainnet/zoo-vote.yaml
+#   ghcr.io/hanzoai/vote  hanzoai/universe  charts/app/values/hanzo/hanzo-vote.yaml
+# A declaration reads a tag, not a branch, and an image published where no
 # declaration reads is invisible.
 
 on:
@@ -26,6 +43,17 @@ jobs:
     # lux-amd64, lux-build-linux-amd64 and lux-build-amd64), so a job asking for
     # it queues forever while looking like CI that has not got round to it.
     runs-on: [lux-build-linux-amd64]
+    strategy:
+      # A registry refusing one org must not withhold the other two.
+      fail-fast: false
+      matrix:
+        include:
+          - home: lux
+            image: ghcr.io/luxfi/vote
+          - home: zoo
+            image: ghcr.io/zooai/vote
+          - home: hanzo
+            image: ghcr.io/hanzoai/vote
     steps:
       - uses: actions/checkout@v4
 
@@ -52,13 +80,17 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/luxfi/vote
+          images: ${{ matrix.image }}
           # No floating tag. A cluster pins a version; `latest` on a registry is
           # a moving target that makes "what is deployed" unanswerable.
           flavor: |
             latest=false
+          # The tenant stays in the tag even though each image has a registry to
+          # itself. A tag that says which DAO it opens on can be read off a pod,
+          # a pull log or a declaration without going back to the workflow that
+          # made it.
           tags: |
-            type=sha,format=short,prefix=lux-
+            type=sha,format=short,prefix=${{ matrix.home }}-
 
       - name: Build & push
         uses: docker/build-push-action@v6
@@ -68,12 +100,11 @@ jobs:
           platforms: linux/amd64
           push: true
           build-args: |
-            VITE_VOTE_HOME=lux
+            VITE_VOTE_HOME=${{ matrix.home }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Say what to pin
         run: |
-          echo "Built lux.vote: ${{ steps.meta.outputs.tags }}"
-          echo "Pin it in luxfi/universe deploy/lux-vote/lux-vote.yaml under image.tag."
-          echo "Nothing deploys until that file names this tag."
+          echo "Built ${{ matrix.home }}.vote: ${{ steps.meta.outputs.tags }}"
+          echo "Nothing deploys until that org's declaration names this tag."
