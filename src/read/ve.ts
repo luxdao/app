@@ -53,8 +53,14 @@ export interface Escrow {
   name: string
   symbol: string
   decimals: number
-  /** Base token the escrow holds. */
-  locked: bigint
+  /**
+   * Base token the escrow holds, or null when the contract keeps no total.
+   *
+   * Null rather than zero. An escrow that never counts its deposits and an
+   * escrow that holds nothing are different facts, and rendering the first as
+   * "0 locked" states the second.
+   */
+  locked: bigint | null
   /** Weight outstanding across every lock. */
   supply: bigint
   /** Shortest and longest lock, in seconds. */
@@ -93,9 +99,20 @@ export interface Ve {
   whole(ask: Ask): Promise<Omit<Escrow, 'address' | 'mine' | 'delegable'>>
   lockOf(ask: Ask, who: `0x${string}`): Promise<Lock>
   open(amount: bigint, end: bigint): Call
-  add(amount: bigint): Call
-  extend(end: bigint): Call
-  close(): Call
+  /**
+   * Add to a running lock, and lengthen one. Optional, because not every
+   * escrow has them: an escrow whose only call is `stake` cannot add without
+   * moving the end, and a screen that offered the button would offer a
+   * transaction that shortens the lock it was meant to grow.
+   */
+  add?(amount: bigint): Call
+  extend?(end: bigint): Call
+  /**
+   * End the lock. Takes the weight being burned, because an escrow that mints
+   * a balance burns one; an escrow that keeps a locked balance ignores it and
+   * returns the deposit whole.
+   */
+  close(power: bigint): Call
 }
 
 /**
@@ -139,6 +156,7 @@ export const CURVE: Ve = {
   open: (amount, end) => ({ functionName: 'createLock', args: [amount, end] }),
   add: (amount) => ({ functionName: 'increaseAmount', args: [amount] }),
   extend: (end) => ({ functionName: 'increaseUnlockTime', args: [end] }),
+  // The whole deposit comes back, so there is no amount to burn.
   close: () => ({ functionName: 'withdraw', args: [] }),
 }
 

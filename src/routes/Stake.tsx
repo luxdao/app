@@ -176,7 +176,11 @@ function Open({ it: e, ve }: { it: Escrow; ve: Ve }) {
       >
         <Facts
           rows={[
-            fact('Locked', `${units(e.locked, e.decimals)}`),
+            fact(
+              'Locked',
+              e.locked === null ? null : units(e.locked, e.decimals),
+              'not counted by this contract',
+            ),
             fact('Weight outstanding', `${units(e.supply, e.decimals)} ${e.symbol}`),
             fact('Shortest lock', days(e.min)),
             fact('Longest lock', days(e.max)),
@@ -290,7 +294,7 @@ function Open({ it: e, ve }: { it: Escrow; ve: Ve }) {
                     void send(() => ({
                       to: e.address as `0x${string}`,
                       abi: ve.abi,
-                      call: ve.close(),
+                      call: ve.close(e.mine.power),
                     }))
                   }
                 >
@@ -312,30 +316,41 @@ function Open({ it: e, ve }: { it: Escrow; ve: Ve }) {
                   </Control>
                   {running ? (
                     <>
-                      <Control
-                        busy={busy}
-                        onPress={() =>
-                          void send(() => ({
-                            to: e.address as `0x${string}`,
-                            abi: ve.abi,
-                            call: ve.add(wei()),
-                          }))
-                        }
-                      >
-                        Add
-                      </Control>
-                      <Control
-                        busy={busy}
-                        onPress={() =>
-                          void send(() => ({
-                            to: e.address as `0x${string}`,
-                            abi: ve.abi,
-                            call: ve.extend(ends(now(), span(), e.min, e.max, e.step)),
-                          }))
-                        }
-                      >
-                        Extend
-                      </Control>
+                      {ve.add || ve.extend ? null : (
+                        <Paragraph size="$3" margin={0} color={quiet}>
+                          A running lock on this contract cannot be added to or lengthened. The only
+                          call is the one that opened it, and it would move the end rather than
+                          extend it, so it is not offered while a lock is running.
+                        </Paragraph>
+                      )}
+                      {ve.add ? (
+                        <Control
+                          busy={busy}
+                          onPress={() =>
+                            void send(() => ({
+                              to: e.address as `0x${string}`,
+                              abi: ve.abi,
+                              call: ve.add!(wei()),
+                            }))
+                          }
+                        >
+                          Add
+                        </Control>
+                      ) : null}
+                      {ve.extend ? (
+                        <Control
+                          busy={busy}
+                          onPress={() =>
+                            void send(() => ({
+                              to: e.address as `0x${string}`,
+                              abi: ve.abi,
+                              call: ve.extend!(ends(now(), span(), e.min, e.max, e.step)),
+                            }))
+                          }
+                        >
+                          Extend
+                        </Control>
+                      ) : null}
                     </>
                   ) : (
                     <Control

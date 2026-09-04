@@ -130,15 +130,15 @@ describe('the Curve-shaped escrow', () => {
 
   it('names the calls a lock is opened, added to, extended and closed with', () => {
     expect(CURVE.open(1n, NOW).functionName).toBe('createLock')
-    expect(CURVE.add(1n).functionName).toBe('increaseAmount')
-    expect(CURVE.extend(NOW).functionName).toBe('increaseUnlockTime')
-    expect(CURVE.close()).toEqual({ functionName: 'withdraw', args: [] })
+    expect(CURVE.add?.(1n).functionName).toBe('increaseAmount')
+    expect(CURVE.extend?.(NOW).functionName).toBe('increaseUnlockTime')
+    expect(CURVE.close(0n)).toEqual({ functionName: 'withdraw', args: [] })
   })
 
   /** Every call the adapter names has to be in the ABI it is signed against. */
   it('signs every call against a member of its own ABI', () => {
     const names = new Set((CURVE.abi as { name?: string }[]).map((m) => m.name))
-    for (const call of [CURVE.open(1n, NOW), CURVE.add(1n), CURVE.extend(NOW), CURVE.close()]) {
+    for (const call of [CURVE.open(1n, NOW), CURVE.add!(1n), CURVE.extend!(NOW), CURVE.close(0n)]) {
       expect(names).toContain(call.functionName)
     }
   })
