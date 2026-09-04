@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useLocation } from 'react-router'
 import { COLUMN, CONTROL, INSET, ROW, line, plain, quiet, ring, surface } from '../parts/paint'
 import { useWalk } from '../parts/link'
+import { Account } from './account'
 import { Connect } from './connect'
 import * as chain from './here'
 
@@ -168,9 +169,14 @@ export function Nav({ more = [] }: { more?: readonly Place[] }) {
           </XStack>
         </XStack>
 
+        {/* The chain being read, then the key that can act on it, then the
+            account that says who is reading. Three separate authorities in the
+            order they matter to a reader, and none of them a gate in front of
+            the other two. */}
         <XStack alignItems="center" gap="$2" flexShrink={0}>
           <Chain />
           <Connect />
+          <Account />
           <Popover open={menu} onOpenChange={setMenu}>
             <PopoverTrigger asChild>
               <Button

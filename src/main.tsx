@@ -2,9 +2,12 @@ import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import { GuiProvider } from '@hanzo/gui'
+import { IamProvider } from '@hanzo/iam/react'
 import { gui } from './chrome/gui'
 import App from './App'
+import { Returning } from './chrome/account'
 import { brand } from './chrome/brand'
+import * as id from './chrome/id'
 import * as theme from './chrome/theme'
 // The type ramp the design system multiplies. `@hanzo/design` publishes
 // `--text-*` as a calc against `--type-scale`; without it every size falls back
@@ -20,14 +23,41 @@ import '@hanzo/design/styles.css'
 import '@hanzo/ui/styles/motion.css'
 import './ground.css'
 
+/**
+ * The tenant's IAM, read once.
+ *
+ * Outside the component because the SDK instance is keyed on this object's
+ * fields: rebuilding it on a render would rebuild the engine and drop the
+ * session with it. It is also the last honest moment to read the tenant — a
+ * fork registers its own before anything renders, and `brand()` below is
+ * already the first read.
+ */
+const iam = id.config()
+
+/**
+ * Auth is IAM's, and only IAM's.
+ *
+ * `IamProvider` is the whole of it: the credential is collected at the issuer's
+ * origin, PKCE binds the code to this browser, and this bundle holds a token it
+ * did not mint. There is no password here, no one-time code, no session of our
+ * own, and nothing in this repository that could be reviewed as authentication.
+ *
+ * It wraps the router rather than a route, because who is reading is a fact
+ * about the document and not about the screen, and because the callback is
+ * answered above the router by `Returning` — a redirect step is not a place.
+ */
 function Surface() {
   const t = theme.use()
   useEffect(() => theme.apply(t), [t])
   return (
     <GuiProvider config={gui} defaultTheme={t}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <IamProvider config={iam}>
+        <Returning>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </Returning>
+      </IamProvider>
     </GuiProvider>
   )
 }

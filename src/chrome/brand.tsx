@@ -130,6 +130,22 @@ export interface Brand {
   readonly mark: (props: { height?: number }) => ReactElement
   /** The chain this site opens on. */
   readonly venue: Venue
+  /**
+   * The IAM that says who a reader is — and the only thing that says it.
+   *
+   * A field of the tenant rather than a second table keyed by the same three
+   * names, because it changes for the tenant's reason and nothing else's: Lux's
+   * people sign in at lux.id and Zoo's at zoolabs.id, and a site that sent one
+   * to the other's login would be asking for the wrong credential under the
+   * wrong mark.
+   *
+   * The values are the estate's, from `hanzo/cloud/brand` (HIP-0111). Zoo is
+   * `zoolabs.id` because `zoo.id` does not resolve and the live IAM stamps
+   * `iss=https://zoolabs.id`. No trailing slash: an issuer is compared as a
+   * literal string, so `https://lux.id/` and `https://lux.id` are two issuers
+   * and only one of them is ever minted.
+   */
+  readonly issuer: string
 }
 
 /**
@@ -146,9 +162,9 @@ function on(key: string): Venue {
 }
 
 export const BRANDS: readonly Brand[] = [
-  { key: 'lux', name: 'Lux', word: 'Vote', mark: Lux, venue: on('lux') },
-  { key: 'zoo', name: 'Zoo', word: 'Zoo Vote', mark: Zoo, venue: on('zoo') },
-  { key: 'hanzo', name: 'Hanzo', word: 'Hanzo Vote', mark: Hanzo, venue: on('hanzo') },
+  { key: 'lux', name: 'Lux', word: 'Vote', mark: Lux, venue: on('lux'), issuer: 'https://lux.id' },
+  { key: 'zoo', name: 'Zoo', word: 'Zoo Vote', mark: Zoo, venue: on('zoo'), issuer: 'https://zoolabs.id' },
+  { key: 'hanzo', name: 'Hanzo', word: 'Hanzo Vote', mark: Hanzo, venue: on('hanzo'), issuer: 'https://hanzo.id' },
 ]
 
 /**
