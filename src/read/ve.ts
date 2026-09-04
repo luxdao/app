@@ -8,23 +8,14 @@ import { attempt, type Read } from '../gov/read'
  * Vote escrow: a lock, and the weight a lock carries while it runs down.
  *
  * This is the one place the interface reads an escrow, and it reads it through
- * an adapter rather than against a contract, because the estate has two shapes
- * of the same instrument and both are real:
+ * an adapter rather than against a contract, because the same instrument has
+ * more than one shape in the estate. `VOTES` binds the one `luxfi/standard`
+ * ships — `VeVotes`, at the `vlux` slot, which is where the venue register
+ * points now that the Curve-style contract that stood there has been removed as
+ * a duplicate.
  *
- *  - **`CURVE`** — `vLUX` in `luxfi/standard`. Locked balance and end, weight
- *    that decays linearly to zero at the end, no delegation. It is what is
- *    deployed on 96369 today, so it is the adapter this interface uses.
- *  - **`VOTES`** — the generic vote-escrow token being written into
- *    `luxfi/standard` as a votes token: the same lock, plus OpenZeppelin
- *    `IVotes`, so escrow weight can be delegated and a Governor can tally it on
- *    a timestamp clock. Not bound: it has no artifact and no address on any
- *    chain yet, and writing an ABI for a contract nobody has compiled would put
- *    a guess where a measurement belongs. Binding it is an `abi.ts` entry, a
- *    slot in `chain.ts`, and an object of this shape — nothing on the screen
- *    changes.
- *
- * A tenant that locks a different token binds a third; the screen does not know
- * which one it drew.
+ * A tenant that locks a different token binds another adapter; the screen does
+ * not know which one it drew.
  */
 
 /** A bound reader, as `reader()` hands one back. */
@@ -44,6 +35,17 @@ export interface Lock {
   end: bigint
   /** The weight the contract reports for this account right now. */
   power: bigint
+  /**
+   * The weight a Governor would tally, which is not the same number.
+   *
+   * Power is what the lock is worth; votes are what has been delegated. On an
+   * escrow that is a votes token they differ by exactly one transaction, and
+   * that transaction is the one holders do not know they have to send. Null on
+   * an escrow with no delegation, where the distinction does not exist.
+   */
+  votes: bigint | null
+  /** Zero address means: held, never delegated, carrying no vote. */
+  delegate: string | null
 }
 
 export interface Escrow {
@@ -107,6 +109,8 @@ export interface Ve {
    */
   add?(amount: bigint): Call
   extend?(end: bigint): Call
+  /** Point this account's weight at an address. Present when `delegable`. */
+  delegate?(to: string): Call
   /**
    * End the lock. Takes the weight being burned, because an escrow that mints
    * a balance burns one; an escrow that keeps a locked balance ignores it and
@@ -124,44 +128,65 @@ export interface Ve {
  * short of it and never mints the whole ratio the comments in the contract
  * describe. The screen reads the step and says so rather than rounding up.
  */
-export const CURVE: Ve = {
+export const VOTES: Ve = {
   where: (v) => presence(v, 'vlux'),
-  abi: abi.vlux,
-  delegable: false,
+  abi: abi.ve,
+  delegable: true,
   decays: true,
 
   async whole(ask) {
     const [base, name, symbol, decimals, locked, supply, min, max, step] = await Promise.all([
-      ask<string>('lux'),
+      ask<string>('underlying'),
       ask<string>('name'),
       ask<string>('symbol'),
       ask<number>('decimals'),
       ask<bigint>('totalLocked'),
       ask<bigint>('totalSupply'),
-      ask<bigint>('MIN_LOCK_TIME'),
-      ask<bigint>('MAX_LOCK_TIME'),
+      ask<bigint>('MIN_LOCK'),
+      ask<bigint>('MAX_LOCK'),
       ask<bigint>('WEEK'),
     ])
     return { base, name, symbol, decimals, locked, supply, min, max, step }
   },
 
   async lockOf(ask, who) {
-    const [held, power] = await Promise.all([
-      ask<readonly [bigint, bigint]>('getLocked', [who]),
+    const [held, power, votes, delegate] = await Promise.all([
+      ask<readonly [bigint, bigint]>('locks', [who]),
       ask<bigint>('balanceOf', [who]),
+      ask<bigint>('getVotes', [who]),
+      ask<string>('delegates', [who]),
     ])
-    return { amount: held[0], end: held[1], power }
+    return { amount: held[0], end: held[1], power, votes, delegate }
   },
 
-  open: (amount, end) => ({ functionName: 'createLock', args: [amount, end] }),
-  add: (amount) => ({ functionName: 'increaseAmount', args: [amount] }),
-  extend: (end) => ({ functionName: 'increaseUnlockTime', args: [end] }),
-  // The whole deposit comes back, so there is no amount to burn.
+  /**
+   * `lock(amount, duration)` is create, enlarge and extend at once, because a
+   * lock is one `(amount, end)` pair and the call sets both. Duration is
+   * measured from now and never shortens the end, so the three calls below are
+   * the same function with one of its arguments zeroed.
+   */
+  open: (amount, end) => ({ functionName: 'lock', args: [amount, span(end)] }),
+  add: (amount) => ({ functionName: 'lock', args: [amount, 0n] }),
+  extend: (end) => ({ functionName: 'lock', args: [0n, span(end)] }),
   close: () => ({ functionName: 'withdraw', args: [] }),
+  delegate: (to) => ({ functionName: 'delegate', args: [to] }),
+}
+
+/**
+ * The end the screen asks for, as the duration the contract takes.
+ *
+ * The screen works in ends because an end is what a reader sees; the contract
+ * works in durations from now. One conversion, here, rather than in three
+ * callers — and floored at zero, because a duration that has already passed is
+ * `lock(amount, 0)`, which adds at the current end rather than reverting.
+ */
+const span = (end: bigint): bigint => {
+  const now = BigInt(Math.floor(Date.now() / 1000))
+  return end > now ? end - now : 0n
 }
 
 /** The escrow this build reads. One line to move a tenant onto another shape. */
-export const VE: Ve = CURVE
+export const VE: Ve = VOTES
 
 export async function escrow(
   v: Venue,
@@ -175,7 +200,9 @@ export async function escrow(
   return attempt(async () => {
     const ask = reader(v, address, ve.abi)
     const whole = await ve.whole(ask)
-    const mine = who ? await ve.lockOf(ask, who) : { amount: 0n, end: 0n, power: 0n }
+    const mine = who
+      ? await ve.lockOf(ask, who)
+      : { amount: 0n, end: 0n, power: 0n, votes: null, delegate: null }
     return { address, ...whole, delegable: ve.delegable, mine }
   })
 }

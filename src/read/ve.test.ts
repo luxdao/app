@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { CURVE, DAY, WEEK, decay, ends, expired, left, round } from './ve'
+import { DAY, VOTES, WEEK, decay, ends, expired, left, round } from './ve'
 
-const YEAR = 365n * DAY
-const MAX = 4n * YEAR
+const YEAR = 52n * WEEK // 52 weeks = MAX / 4: the escrow is week-aligned with a 208-week maximum
+/** 208 weeks, which is what `MAX_LOCK` answers. */
+const MAX = 208n * WEEK
 const MIN = WEEK
 /** A round number standing in for "now". Nothing here depends on the wall clock. */
 const NOW = 1_800_000_000n
@@ -108,38 +109,61 @@ describe('ends', () => {
   })
 })
 
-describe('the Curve-shaped escrow', () => {
+describe('the escrow this build binds', () => {
   it('finds its address through the register rather than being handed one', () => {
-    expect(typeof CURVE.where).toBe('function')
+    expect(typeof VOTES.where).toBe('function')
+  })
+
+  it('says weight falls, because on this one it does', () => {
+    expect(VOTES.decays).toBe(true)
+  })
+
+  it('offers delegation, because the escrow is a votes token', () => {
+    expect(VOTES.delegable).toBe(true)
+    expect(VOTES.delegate?.('0x0').functionName).toBe('delegate')
   })
 
   /**
-   * There is no `delegate` on this contract and no `getVotes`. A screen that
-   * offered delegation here would offer a transaction that cannot be built.
+   * Creating, enlarging and extending are one call with one argument zeroed. A
+   * lock is a single `(amount, end)` pair and `lock` sets both, so an adapter
+   * naming three functions would be naming two that do not exist.
    */
-  it('says weight falls, because on this one it does', () => {
-    expect(CURVE.decays).toBe(true)
+  it('opens, adds and extends through the one call the contract has', () => {
+    expect(VOTES.open(1n, NOW).functionName).toBe('lock')
+    expect(VOTES.add?.(5n)).toEqual({ functionName: 'lock', args: [5n, 0n] })
+    expect(VOTES.extend?.(NOW).args[0]).toBe(0n)
+    expect(VOTES.close(0n)).toEqual({ functionName: 'withdraw', args: [] })
   })
 
-  it('does not offer delegation the contract has no function for', () => {
-    expect(CURVE.delegable).toBe(false)
-    const names = (CURVE.abi as { name?: string }[]).map((m) => m.name)
-    expect(names).not.toContain('delegate')
-    expect(names).not.toContain('getVotes')
-  })
-
-  it('names the calls a lock is opened, added to, extended and closed with', () => {
-    expect(CURVE.open(1n, NOW).functionName).toBe('createLock')
-    expect(CURVE.add?.(1n).functionName).toBe('increaseAmount')
-    expect(CURVE.extend?.(NOW).functionName).toBe('increaseUnlockTime')
-    expect(CURVE.close(0n)).toEqual({ functionName: 'withdraw', args: [] })
+  /**
+   * The screen works in ends; the contract works in durations from now. A
+   * duration that has already passed is zero rather than negative — and zero
+   * is the call that adds at the current end rather than one that reverts.
+   */
+  it('turns an end into a duration, and a passed end into none', () => {
+    const soon = BigInt(Math.floor(Date.now() / 1000)) + 3600n
+    expect(VOTES.open(1n, soon).args[1]).toBeGreaterThan(0n)
+    expect(VOTES.open(1n, 1n).args[1]).toBe(0n)
   })
 
   /** Every call the adapter names has to be in the ABI it is signed against. */
   it('signs every call against a member of its own ABI', () => {
-    const names = new Set((CURVE.abi as { name?: string }[]).map((m) => m.name))
-    for (const call of [CURVE.open(1n, NOW), CURVE.add!(1n), CURVE.extend!(NOW), CURVE.close(0n)]) {
+    const names = new Set((VOTES.abi as { name?: string }[]).map((m) => m.name))
+    for (const call of [
+      VOTES.open(1n, NOW),
+      VOTES.add!(1n),
+      VOTES.extend!(NOW),
+      VOTES.close(0n),
+      VOTES.delegate!('0x0'),
+    ]) {
       expect(names).toContain(call.functionName)
     }
+  })
+
+  /** No transfer and no approve: dispatch reverts, so neither is decodable here. */
+  it('carries no transfer surface, because the contract has none', () => {
+    const names = (VOTES.abi as { name?: string }[]).map((m) => m.name)
+    expect(names).not.toContain('transfer')
+    expect(names).not.toContain('approve')
   })
 })
