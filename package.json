@@ -11,6 +11,7 @@
   ],
   "exports": {
     ".": "./src/App.tsx",
+    "./package.json": "./package.json",
     "./gov/*": "./src/gov/*.ts",
     "./read/*": "./src/read/*.ts",
     "./routes/*": "./src/routes/*.tsx",
