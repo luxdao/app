@@ -236,28 +236,67 @@ export const roles = [
   },
 ] as const
 
-/** vLUX — Curve-style vote escrow. Not IVotes; its own Point history. */
-export const vlux = [
+/**
+ * VeVotes — the vote escrow in `luxfi/standard`, and an ERC-5805 votes token.
+ *
+ * One lock per account, `(uint128 amount, uint48 end)`, and `lock(amount,
+ * duration)` is the whole of creating, enlarging and extending it: duration is
+ * measured from now, the new end is `max(current, now + duration)` floored to a
+ * week, and it never shortens. `lock(amount, 0)` adds at the current end and
+ * `lock(0, duration)` extends without adding.
+ *
+ * Power is `amount / MAX_LOCK * (end - now)` — a straight line to zero at the
+ * end. `balanceOf` is the account's own power whether or not it is delegated;
+ * `getVotes` is what a Governor tallies, and it is zero until the holder
+ * delegates, to themselves or to anyone. `getPastTotalSupply` counts every
+ * lock regardless, so an undelegated lock raises the quorum it cannot vote
+ * toward.
+ *
+ * There is no `transfer` and no `approve`: dispatch reverts. Escrow weight is
+ * not an asset that moves, so the only ERC20 members here are the ones that
+ * describe it.
+ */
+export const ve = [
   { type: 'function', name: 'name', inputs: [], outputs: [{ type: 'string' }], stateMutability: 'view' },
   { type: 'function', name: 'symbol', inputs: [], outputs: [{ type: 'string' }], stateMutability: 'view' },
   { type: 'function', name: 'decimals', inputs: [], outputs: [{ type: 'uint8' }], stateMutability: 'view' },
-  /** The token that gets locked. Named for the asset on this contract. */
-  { type: 'function', name: 'lux', inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view' },
+  /** The ERC20 that locking escrows. */
+  { type: 'function', name: 'underlying', inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view' },
   { type: 'function', name: 'totalSupply', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'totalLocked', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'balanceOf', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
-  { type: 'function', name: 'MIN_LOCK_TIME', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
-  { type: 'function', name: 'MAX_LOCK_TIME', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
-  /** The step a lock end is floored to, and the reason `ends()` rounds up. */
   { type: 'function', name: 'WEEK', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'MIN_LOCK', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'MAX_LOCK', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   {
-    type: 'function', name: 'getLocked', inputs: [{ type: 'address' }],
-    outputs: [{ name: 'amount', type: 'uint256' }, { name: 'end', type: 'uint256' }], stateMutability: 'view',
+    type: 'function', name: 'locks', inputs: [{ type: 'address' }],
+    outputs: [{ name: 'amount', type: 'uint128' }, { name: 'end', type: 'uint48' }], stateMutability: 'view',
   },
-  { type: 'function', name: 'createLock', inputs: [{ type: 'uint256' }, { type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
-  { type: 'function', name: 'increaseAmount', inputs: [{ type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
-  { type: 'function', name: 'increaseUnlockTime', inputs: [{ type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'clock', inputs: [], outputs: [{ type: 'uint48' }], stateMutability: 'view' },
+  { type: 'function', name: 'CLOCK_MODE', inputs: [], outputs: [{ type: 'string' }], stateMutability: 'pure' },
+  { type: 'function', name: 'getVotes', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'getPastVotes', inputs: [{ type: 'address' }, { type: 'uint256' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'getPastTotalSupply', inputs: [{ type: 'uint256' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'delegates', inputs: [{ type: 'address' }], outputs: [{ type: 'address' }], stateMutability: 'view' },
+  { type: 'function', name: 'delegate', inputs: [{ type: 'address' }], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'lock', inputs: [{ type: 'uint256' }, { type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'withdraw', inputs: [], outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'event', name: 'Locked',
+    inputs: [
+      { name: 'account', type: 'address', indexed: true },
+      { name: 'added', type: 'uint256', indexed: false },
+      { name: 'amount', type: 'uint256', indexed: false },
+      { name: 'end', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event', name: 'Withdrawn',
+    inputs: [
+      { name: 'account', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
 ] as const
 
 /** GaugeController — vLUX-weighted fee direction. Gauge ids are 0-based. */
@@ -283,4 +322,56 @@ export const dlux = [
   { type: 'function', name: 'epoch', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'rebaseRate', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'balanceOf', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+] as const
+
+/**
+ * DIDRegistry — W3C DID documents, on chain.
+ *
+ * From `luxfi/standard` `contracts/identity/DIDRegistry.sol` and its
+ * `interfaces/IDID.sol`. Only the four reads this interface makes: a DID is
+ * created and updated by its own controller, from their own wallet, and this app
+ * has no business holding a write path to somebody's identity.
+ *
+ * `resolve` REVERTS for a DID that was never registered — `DIDNotFound` — and
+ * again for one that was deactivated. A revert at the call site is
+ * indistinguishable from the chain refusing, so `didExists` is asked first and
+ * the two answers are kept apart. See `src/read/id.ts`.
+ *
+ * `controllerOf` is deliberately absent: the document `resolve` returns already
+ * carries the controller, so declaring it would be the same address asked for
+ * twice.
+ */
+export const did = [
+  { type: 'function', name: 'didExists', inputs: [{ type: 'string' }], outputs: [{ type: 'bool' }], stateMutability: 'view' },
+  {
+    type: 'function', name: 'resolve', inputs: [{ type: 'string' }],
+    outputs: [{
+      type: 'tuple',
+      components: [
+        { name: 'did', type: 'string' },
+        { name: 'controller', type: 'address' },
+        { name: 'additionalControllers', type: 'address[]' },
+        { name: 'alsoKnownAs', type: 'string[]' },
+        { name: 'created', type: 'uint256' },
+        { name: 'updated', type: 'uint256' },
+        { name: 'active', type: 'bool' },
+      ],
+    }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function', name: 'getVerificationMethods', inputs: [{ type: 'string' }],
+    outputs: [{
+      type: 'tuple[]',
+      components: [
+        { name: 'id', type: 'bytes32' },
+        { name: 'methodType', type: 'uint8' },
+        { name: 'controller', type: 'address' },
+        { name: 'publicKeyMultibase', type: 'bytes' },
+        { name: 'blockchainAccountId', type: 'bytes32' },
+      ],
+    }],
+    stateMutability: 'view',
+  },
+  { type: 'function', name: 'getDIDsForController', inputs: [{ type: 'address' }], outputs: [{ type: 'string[]' }], stateMutability: 'view' },
 ] as const

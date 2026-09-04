@@ -45,6 +45,7 @@ export type Slot =
   | 'bounty'
   | 'roles'
   | 'safe'
+  | 'didRegistry'
 
 export interface Venue {
   /** EIP-155 chain id, and the key every screen selects on. */
@@ -161,6 +162,16 @@ export const VENUES: readonly Venue[] = [
             governor: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
             timelock: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
             votes: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+            // The DID registry, and the only place any record names one.
+            // `luxfi/standard` `deployments/local-anvil.json` puts it here on a
+            // chain that answers as 96369 at this loopback address, and no
+            // mainnet record names one at all — the four L2 devnet files record
+            // it as "(failed)" and osage records the gas limit that stopped it.
+            // The same address is AMMV2Router in the 96368 testnet record, which
+            // is the proof that it is a nonce, not a registry: the four mainnet
+            // venues above therefore carry no slot and the interface says no
+            // address is recorded rather than reading somebody else's contract.
+            didRegistry: '0xB0B3Df1E279D87e72738487Df8d7c0d7c2D1eFcE',
           },
         } satisfies Venue,
       ]
