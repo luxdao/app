@@ -125,7 +125,7 @@ export const VENUES: readonly Venue[] = [
     // deployments/l2-mainnet/pars.json; the DAO repo names another, and that
     // file marks its own work-market block superseded.
     at: {
-      bounty: '0x316B41c886c7D4B4e38cBB08a243776Ed977cf1F',
+      bounty: '0x79254D4A9286FBd65E7177440Be20f00934c33c2',
       governor: '0x62Ea1B27CDD922dbAaE0572f4CD4862Ca939C24c',
       safe: '0x4CEA4ac1C874a340B06e0422E77a477463C3a542',
     },
