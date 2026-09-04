@@ -1,5 +1,6 @@
+import type { Address } from 'viem'
 import * as abi from '../gov/abi'
-import type { Slot, Venue } from '../gov/chain'
+import type { Venue } from '../gov/chain'
 import { presence, reader } from '../gov/client'
 import { attempt, type Read } from '../gov/read'
 
@@ -67,8 +68,14 @@ export interface Escrow {
 }
 
 export interface Ve {
-  /** Where `chain.ts` records this contract's address. */
-  readonly slot: Slot
+  /**
+   * Where this escrow is on a venue, and whether anything is there.
+   *
+   * A function rather than a slot in `chain.ts`, because a fork's escrow is not
+   * in this repository's register: it keeps its own, and the answer this
+   * returns is the same four-state reading either way.
+   */
+  where(v: Venue): Promise<Read<{ address: Address; size: number }>>
   readonly abi: readonly unknown[]
   readonly delegable: boolean
   /**
@@ -101,7 +108,7 @@ export interface Ve {
  * describe. The screen reads the step and says so rather than rounding up.
  */
 export const CURVE: Ve = {
-  slot: 'vlux',
+  where: (v) => presence(v, 'vlux'),
   abi: abi.vlux,
   delegable: false,
   decays: true,
@@ -143,7 +150,7 @@ export async function escrow(
   who: `0x${string}` | null,
   ve: Ve = VE,
 ): Promise<Read<Escrow>> {
-  const here = await presence(v, ve.slot)
+  const here = await ve.where(v)
   if (here.at !== 'read') return here
   const address = here.value.address
 

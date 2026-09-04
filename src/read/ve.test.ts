@@ -109,8 +109,8 @@ describe('ends', () => {
 })
 
 describe('the Curve-shaped escrow', () => {
-  it('reads the lock the interface renders from the slot the chain records', () => {
-    expect(CURVE.slot).toBe('vlux')
+  it('finds its address through the register rather than being handed one', () => {
+    expect(typeof CURVE.where).toBe('function')
   })
 
   /**
