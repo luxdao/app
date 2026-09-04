@@ -259,6 +259,78 @@ SDKs, which are optional peers. Use `@luxwallet/connect/nonce` and
 `@luxwallet/connect/evm/connect`. The dev server resolves the barrel happily;
 only `vite build` finds it.
 
+## Identity is IAM's, and this app builds none of it
+
+**There is no authentication in this repository and there must never be.** No
+password, no one-time code, no SIWE, no session of our own, no second gate in
+front of IAM's. The credential is typed at the issuer's own origin, PKCE binds
+the returned code to this browser, and what arrives back is a token this bundle
+only decodes. `src/chrome/id.ts` is a reader of claims; `IamProvider` in
+`main.tsx` is the whole of the wiring. Anything that looks like a login flow
+being added here is the mistake.
+
+The issuer is a field of the tenant in `BRANDS`, not a second table keyed by the
+same three names — identity belongs to the tenant and changes for the tenant's
+reason. The client id is `<org>-<app>`, HIP-0111, **derived** from the tenant so a
+fork's site gets one from the rule that gave these three theirs:
+
+| Site | Issuer | Client | Registered in |
+| --- | --- | --- | --- |
+| lux.vote | `https://lux.id` | `lux-vote` | `luxfi/universe` `infra/k8s/iam/provision.yaml` |
+| zoo.vote | `https://zoolabs.id` | `zoo-vote` | `zooai/universe` `infra/k8s/iam/provision.yaml` |
+| hanzo.vote | `https://hanzo.id` | `hanzo-vote` | `hanzoai/universe` `infra/k8s/iam/provision.yaml` |
+
+Zoo is `zoolabs.id` because `zoo.id` does not resolve and the live IAM stamps
+`iss=https://zoolabs.id`. Every issuer is an origin with nothing after it: an
+issuer is compared as a literal string, so `https://lux.id/` and `https://lux.id`
+are two issuers and only one of them is ever minted. All three are `spa` and
+**never confidential** — a browser cannot keep a secret, and IAM demands client
+authentication whenever one is stored, which is what killed every login on
+lux.cloud until its registration was corrected.
+
+**Nothing here is an environment variable.** The host names the tenant, the
+tenant names the issuer, and the issuer plus the derived client id are the whole
+configuration. A build flag able to point one tenant's login at another tenant's
+issuer could only ever be used to get that wrong.
+
+**The authorize host is pinned back to the tenant.** The SDK reads the authorize
+endpoint out of OIDC discovery and a brand IAM may advertise a shared host there
+— zoolabs.id's discovery names hanzo.id — so taken at its word a Zoo reader
+would be asked to "Sign in to Hanzo" under a Zoo mark. `id.start()` builds the
+URL through the SDK (so PKCE and state are minted and stashed; it is not a second
+implementation of the flow and could not be) and then pins the host. The code is
+still exchanged at the discovered token endpoint, which is already the brand's.
+
+`/auth/callback` is answered by `Returning` in `chrome/account.tsx`, **above the
+router**, because a redirect step is not a screen. Adding a route for it would
+put a heading on a page nobody reads and would have to exist on every fork.
+
+**An account is not a key.** IAM says which account this is; `chrome/wallet.ts`
+holds something that can move value on a chain. Either is true without the other,
+and signing in is not a prerequisite for voting — the Governor has never heard of
+IAM and counts a signature. `linked` is the only place the two are compared,
+because drawing a connected address beside a signed-in name claims the account
+owns it and nothing says so.
+
+Claims are read tolerantly and **absent is not empty**: `wallets` is `null` when
+the claim is missing (IAM said nothing) and `[]` when it is present and empty
+(IAM said none), which the popover says as two different sentences. A row whose
+address is not an address is dropped rather than half-drawn, and a `did` that is
+not shaped like one is treated as absent — passed on, it would come back from the
+registry as a revert that reads on screen as the chain's fault.
+
+**No chain records a DID registry.** `read/id.ts` asks
+`luxfi/standard`'s `DIDRegistry`, and `gov/chain.ts` carries the `didRegistry`
+slot only for the loopback node: `deployments/local-anvil.json` names one at
+`0xB0B3Df1E…`, the four L2 devnet records say `(failed)`, and no mainnet record
+names one at all. The same address is `AMMV2Router` in the 96368 testnet record,
+which is what proves it is a deployment nonce rather than a registry. So on all
+three sites the read answers `unrecorded` without a request and the screen says
+no address is recorded — a statement about our files, not about the chain.
+`didExists` is asked before `resolve` because `resolve` reverts for anything the
+registry does not hold, and a revert would report a healthy registry as
+unreadable for everyone without a registration.
+
 ## The two high advisories, and why they stay
 
 `pnpm audit` reports two high advisories, both `image-size`, reached only as:
