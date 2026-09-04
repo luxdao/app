@@ -1,5 +1,5 @@
 import { Button } from '@hanzogui/button'
-import { LX } from './lx'
+import { BRAND } from './brand'
 import { Popover, PopoverContent, PopoverTrigger } from '@hanzogui/popover'
 import { XStack, YStack } from '@hanzogui/stacks'
 import { SizableText } from '@hanzogui/text'
@@ -141,14 +141,15 @@ export function Nav() {
             whiteSpace="nowrap"
             flexShrink={0}
             gap="$2"
-            aria-label="Lux Vote"
+            aria-label={`${BRAND.name} Vote`}
           >
-            {/* Drawn, not fetched — an <img> lands after a round trip and shifts
-                the row it sits in, on the first thing a person looks at. It
-                takes currentColor, so it moves with the theme rather than with
-                the desktop. */}
-            <LX />
-            Vote
+            {/* The tenant's own mark and the word the mark does not already
+                say. Drawn, not fetched — an <img> lands after a round trip and
+                shifts the row it sits in, on the first thing a person looks at.
+                It takes currentColor, so it moves with the theme rather than
+                with the desktop. */}
+            <BRAND.mark />
+            {BRAND.word}
           </SizableText>
           <XStack gap="$4" display="none" $gtSm={{ display: 'flex' }} alignItems="center" flexWrap="wrap">
             {WHERE.map(([to, label]) => (

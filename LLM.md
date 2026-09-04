@@ -43,6 +43,47 @@ Telemetry is off. `@hanzo/gui` depends on `@hanzogui/telemetry`, which posts to
 `api.hanzo.ai/v1/event` on load by default. `VITE_HANZO_TELEMETRY: 'off'` is set
 in the vite `define` block — visible in the build, and not losable with a `.env`.
 
+## A tenant is not a chain
+
+Two questions that look like one and are not:
+
+- **Which chains can be read.** `src/gov/chain.ts` `VENUES` — Lux 96369, Zoo
+  200200, Pars 494949, Hanzo 36963, plus a loopback node under `import.meta.env.DEV`.
+  Every one of them is reachable from every site through the picker in the
+  header, so the deployment survey can compare four chains against the records.
+- **Which sites this bundle serves.** `src/chrome/brand.tsx` `BRANDS` — lux,
+  zoo, hanzo. Each names its chain, its mark, and the word beside the mark.
+
+`HOME` — the chain a site opens on — is exported from `brand.tsx`, not from
+`chain.ts`, because it is an answer to the second question. **Do not export it
+from `chain.ts` again**: `brand.tsx` imports `venue()` from `chain.ts`, so a
+re-export the other way is a cycle, and in ESM the re-export is hoisted, which
+means `brand.tsx` evaluates first and reads `VENUES` in its temporal dead zone.
+That fails as `ReferenceError` at load, in the browser, on every screen.
+
+**The host names the tenant, and `VITE_VOTE_HOME` is only the fallback.** Every
+label of the hostname is checked against `BRANDS`, so `lux.vote`,
+`www.hanzo.vote` and `vote.zoo.network` all land on the right DAO from one
+bundle. The build-time value is what a host that belongs to nobody gets —
+`localhost`, an IP, a preview URL — and it is what each image is built with, so
+a container reached by an unbranded name is still itself.
+
+Pars is a readable chain here and **not** a tenant. pars.vote is served from a
+fork of this source, which adds its own entry: `BRANDS` is a value and
+`tenant()` takes the list as an argument, so a fork extends rather than edits.
+
+The lockup is the mark plus **what the mark does not already say**. The Lux mark
+is the letters L and X, so the word beside it is "Vote"; the Zoo and Hanzo marks
+are glyphs, so theirs read "Zoo Vote" and "Hanzo Vote". Every mark is inline and
+in `currentColor` — an `<img>` lands after a round trip and shifts the first row
+a person looks at, and a published logo file paints itself from
+`prefers-color-scheme`, which is the desktop's answer inside an app that carries
+its own.
+
+`index.html` says only "Vote". The tenant is added to `document.title` in
+`main.tsx`, because the same file is served on all three hosts and naming one of
+them there would put "Lux Vote" in hanzo.vote's tab until the bundle parsed.
+
 ## Endpoints: use the path form or a browser sees nothing
 
 Every venue's RPC is `https://api.<org>.network/v1/chain/C/rpc`, never the bare

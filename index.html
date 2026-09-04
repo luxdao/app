@@ -7,7 +7,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Lux Vote</title>
+    <!-- The tenant's name is added by main.tsx, because which tenant this is
+         depends on the host and this file is the same on all of them. Naming
+         one here would put "Lux Vote" in the tab of hanzo.vote for as long as
+         the bundle took to parse. -->
+    <title>Vote</title>
   </head>
   <body>
     <div id="root"></div>

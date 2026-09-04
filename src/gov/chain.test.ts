@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HOME, VENUES, venue } from './chain'
+import { VENUES, venue } from './chain'
 
 /**
  * The venues a build ships with. A node on this machine is compiled in under
@@ -30,10 +30,6 @@ describe('the chain registry', () => {
     // deployment move rather than on the mistake it exists to catch.
     for (const v of shipped)
       expect(v.rpc).toMatch(/^https:\/\/api\.[a-z-]+\.network\/v1\/(?:bc|chain)\/C\/rpc$/)
-  })
-
-  it('opens on Lux mainnet', () => {
-    expect(HOME.id).toBe(96369)
   })
 
   it('finds a chain by key and reports nothing for one it does not have', () => {

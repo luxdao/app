@@ -1,5 +1,8 @@
 import { useSyncExternalStore } from 'react'
-import { HOME, VENUES, venue, type Venue } from '../gov/chain'
+import { VENUES, venue, type Venue } from '../gov/chain'
+// The chain to open on is the TENANT's, not the registry's: lux.vote opens on
+// Lux and hanzo.vote on Hanzo, from one build.
+import { HOME } from './brand'
 
 /**
  * Which chain the interface is reading.
@@ -9,7 +12,7 @@ import { HOME, VENUES, venue, type Venue } from '../gov/chain'
  * chain change discard every in-flight read rather than let one land against
  * the wrong chain's screen.
  */
-const KEY = 'lux.vote.chain'
+const KEY = 'vote.chain'
 
 function stored(): Venue {
   try {

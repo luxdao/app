@@ -1,6 +1,7 @@
 /** One key, one shape. Namespaced, because storage is shared with everything
- *  else this origin serves. */
-export const KEY = 'lux.vote.theme'
+ *  else this origin serves — and named for the app rather than for one of its
+ *  tenants, because the same bundle is lux.vote, zoo.vote and hanzo.vote. */
+export const KEY = 'vote.theme'
 
 /**
  * The head script. Dark is what the document ships with, so only the other

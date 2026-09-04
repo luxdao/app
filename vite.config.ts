@@ -38,16 +38,16 @@ function head(): Plugin {
   }
 }
 
-// The venue this build opens on, checked here rather than only in the app.
+// The tenant this build falls back to, checked here rather than only in the app.
 //
-// chain.ts throws on an unknown key, but that throw lands in a browser: the
+// brand.tsx throws on an unknown key, but that throw lands in a browser: the
 // bundle builds, publishes, deploys, and shows a blank page. The keys are known
 // at config time, so a typo should cost a failed build and not a failed site.
-// Kept in step with VENUES in src/gov/chain.ts.
-const HOMES = ['lux', 'zoo', 'hanzo', 'pars', 'local'] as const
+// Kept in step with BRANDS in src/chrome/brand.tsx.
+const HOMES = ['lux', 'zoo', 'hanzo'] as const
 const home = process.env.VITE_VOTE_HOME ?? 'lux'
 if (!HOMES.includes(home as (typeof HOMES)[number])) {
-  throw new Error(`VITE_VOTE_HOME names "${home}", which is not a venue. Known: ${HOMES.join(', ')}.`)
+  throw new Error(`VITE_VOTE_HOME names "${home}", which is not a tenant. Known: ${HOMES.join(', ')}.`)
 }
 
 export default defineConfig(({ mode }) => ({

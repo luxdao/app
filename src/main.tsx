@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router'
 import { GuiProvider } from '@hanzo/gui'
 import { gui } from './chrome/gui'
 import App from './App'
+import { BRAND } from './chrome/brand'
 import * as theme from './chrome/theme'
 // The type ramp the design system multiplies. `@hanzo/design` publishes
 // `--text-*` as a calc against `--type-scale`; without it every size falls back
@@ -30,6 +31,10 @@ function Surface() {
     </GuiProvider>
   )
 }
+
+// Which site this is. index.html carries "Vote" alone because it is served on
+// every host; the tenant is a fact about the host and is added here.
+document.title = `${BRAND.name} Vote`
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
