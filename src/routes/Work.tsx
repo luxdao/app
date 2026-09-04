@@ -11,64 +11,92 @@ import { Mark, type Tone } from '../parts/mark'
 import { Panel, Title } from '../parts/panel'
 import { quiet } from '../parts/paint'
 import { Table } from '../parts/table'
-import { NATIVE, board, standing, type Status } from '../read/work'
-
-const tone: Record<Status, Tone> = {
-  None: 'plain', Open: 'good', Claimed: 'warn', Submitted: 'warn', Released: 'good', Cancelled: 'plain',
-}
+import { ZERO, board, standing, type Bounty, type State } from '../read/work'
 
 /**
- * The work market: funded tasks, escrowed on posting, paid on approval.
- *
- * The status vocabulary here is the deployed contract's, which is shorter than
- * the one LP-0020 describes in prose — there is no separate escrow, no arbiter
- * and no dispute state in `contracts/work/Bounty.sol`. Naming states the
- * contract does not have would be describing a machine that is not running.
+ * Open is proposed and unfunded, so it promises nothing yet — plain, not good.
+ * Disputed is the one state where the two sides disagree about whose the
+ * escrowed reward is, and it is the only one worth colouring as trouble.
  */
+const tone: Record<State, Tone> = {
+  None: 'plain',
+  Open: 'plain',
+  Funded: 'good',
+  Claimed: 'warn',
+  Submitted: 'warn',
+  Accepted: 'good',
+  Paid: 'good',
+  Disputed: 'bad',
+  Cancelled: 'plain',
+}
+
+const coin = (wei: bigint, symbol: string) =>
+  `${Number(formatEther(wei)).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${symbol}`
+
+/**
+ * A reward is one of four kinds of thing and only the first two are amounts.
+ *
+ * An ERC-20 is shown in its own units because its decimals are another call
+ * and this screen has not made it. An NFT reward is a token id, where the
+ * reward number is a quantity of that id rather than a value.
+ */
+const reward = (b: Bounty, symbol: string): string => {
+  switch (b.rewardKind) {
+    case 'Native':
+      return coin(b.reward, symbol)
+    case 'ERC20':
+      return `${b.reward.toString()} (ERC-20 units)`
+    case 'ERC721':
+      return `#${b.rewardTokenId.toString()} (ERC-721)`
+    case 'ERC1155':
+      return `${b.reward.toString()} × #${b.rewardTokenId.toString()} (ERC-1155)`
+  }
+}
+
+/** The stake is always fungible: a share of an NFT cannot be slashed. */
+const stake = (b: Bounty, symbol: string): string =>
+  b.stakeToken === ZERO ? coin(b.stake, symbol) : `${b.stake.toString()} (ERC-20 units)`
+
 export default function Work() {
   const here = chain.use()
   const session = wallet.use()
-  const tasks = useRead(() => board(here), [here.key])
+  const bounties = useRead(() => board(here), [here.key])
   const me = useRead(() => standing(here, session?.address ?? null), [here.key, session?.address])
 
   return (
     <YStack gap="$6">
-      <Title lede={`Funded tasks on ${here.name}. A reward is escrowed when a task is posted and released when it is approved.`}>
+      <Title
+        lede={`Bounties on ${here.name}. A worker stakes to claim one; the reward is released when the approver accepts, or by anyone once the review window has run out.`}
+      >
         Work
       </Title>
 
       <Reading
-        of={tasks}
+        of={bounties}
         what="the work market"
         nothing={
           <Answer
-            title="No task has been posted"
-            detail="The market answered: its task count is zero. Nothing has been posted here, which is different from a board that failed to load."
+            title="No bounty has been proposed"
+            detail="The market answered: its count is zero. Nothing has been proposed here, which is different from a board that failed to load."
           />
         }
       >
         {(rows) => (
-          <Panel title={`${rows.length} ${rows.length === 1 ? 'task' : 'tasks'}`}>
+          <Panel title={`${rows.length} ${rows.length === 1 ? 'bounty' : 'bounties'}`}>
             <Table
-              caption="Tasks on this market"
+              caption="Bounties on this market"
               keyOf={(r) => r.id.toString()}
               rows={rows}
               columns={[
                 { head: '#', cell: (r) => r.id.toString() },
-                { head: 'Status', cell: (r) => <Mark tone={tone[r.status]}>{r.status}</Mark> },
-                {
-                  head: 'Reward',
-                  align: 'right',
-                  cell: (r) =>
-                    r.token === NATIVE
-                      ? `${Number(formatEther(r.reward)).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${here.symbol}`
-                      : `${r.reward.toString()} (token)`,
-                },
-                { head: 'Poster', cell: (r) => <Address at={r.poster} explorer={here.explorer} /> },
+                { head: 'State', cell: (r) => <Mark tone={tone[r.state]}>{r.state}</Mark> },
+                { head: 'Reward', align: 'right', cell: (r) => reward(r, here.symbol) },
+                { head: 'Stake', align: 'right', cell: (r) => stake(r, here.symbol) },
+                { head: 'Funder', cell: (r) => <Address at={r.funder} explorer={here.explorer} /> },
                 {
                   head: 'Worker',
                   cell: (r) =>
-                    r.worker === NATIVE ? <span>unclaimed</span> : <Address at={r.worker} explorer={here.explorer} />,
+                    r.worker === ZERO ? <span>unclaimed</span> : <Address at={r.worker} explorer={here.explorer} />,
                 },
               ]}
             />
@@ -82,18 +110,21 @@ export default function Work() {
             title="Contribution"
             note={
               <>
-                Append-only, with one writer fixed at construction — the market at{' '}
+                Append-only, with one writer fixed at initialize — the market at{' '}
                 <Address at={s.writer} explorer={here.explorer} />. It is not a token and cannot be
-                transferred.
+                transferred. Earnings sum the reward amounts recorded on completion, and those
+                rewards are not all the same asset, so the total is in units rather than in{' '}
+                {here.symbol}.
               </>
             }
           >
             <Facts
               min={200}
-              max={2}
+              max={3}
               rows={[
                 fact('Your completions', session ? s.completed.toString() : null, 'no wallet connected'),
-                fact('Your score', session ? s.score.toString() : null, 'no wallet connected'),
+                fact('Disputes lost', session ? s.disputesLost.toString() : null, 'no wallet connected'),
+                fact('Recorded earnings', session ? s.earned.toString() : null, 'no wallet connected'),
               ]}
             />
             {!session ? (

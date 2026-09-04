@@ -159,46 +159,64 @@ export const karma = [
 ] as const
 
 /**
- * Bounty — `contracts/work/Bounty.sol`, which is NOT the machine LP-0020
- * describes in prose. The deployed contract has no separate Escrow, no
- * dispute path and no `stateOf`: it escrows inside `postTask`, and its status
- * enum stops at Released. Built from the artifact, not from the LP.
+ * Bounty — the deployed work market, read from
+ * `luxfi/dao` `contracts/out-foundry/Bounty.sol/Bounty.json`.
  *
- * Task ids are 1-based; id 0 is the `None` status and never a real task.
+ * An earlier version of this file described `luxfi/standard`'s
+ * `contracts/work/Bounty.sol` — `taskCount`, `getTask`, a nine-field task and a
+ * status enum stopping at Released. That contract was never deployed. What runs
+ * on Zoo and Pars is the UUPS set recorded in `deployments/lux-dao/*.json`:
+ * Bounty over a separate Escrow, with an arbiter and a dispute path.
+ *
+ * Ids are 0-based — `bountyCount` is the next id, so the board is 0 to
+ * count - 1. Nothing is escrowed at proposal; `fund` does that, which is why
+ * Open and Funded are separate states.
+ *
+ * The reward asset and the stake asset are recorded separately, and they are
+ * not the same kind of thing: a reward may be an NFT while the stake stays
+ * fungible, so neither can be read off a single `token` field.
  */
 export const bounty = [
-  { type: 'function', name: 'taskCount', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'bountyCount', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'reputation', inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view' },
   {
-    type: 'function', name: 'getTask', inputs: [{ type: 'uint256' }],
+    type: 'function', name: 'bounties', inputs: [{ type: 'uint256' }],
     outputs: [{
       type: 'tuple',
       components: [
-        { name: 'poster', type: 'address' }, { name: 'worker', type: 'address' },
-        { name: 'token', type: 'address' }, { name: 'reward', type: 'uint256' },
-        { name: 'createdAt', type: 'uint64' }, { name: 'deadline', type: 'uint64' },
-        { name: 'status', type: 'uint8' }, { name: 'detailsHash', type: 'bytes32' },
-        { name: 'submissionHash', type: 'bytes32' },
+        { name: 'state', type: 'uint8' }, { name: 'rewardKind', type: 'uint8' },
+        { name: 'rewardToken', type: 'address' }, { name: 'rewardTokenId', type: 'uint256' },
+        { name: 'reward', type: 'uint256' },
+        { name: 'stakeToken', type: 'address' }, { name: 'stake', type: 'uint256' },
+        { name: 'funder', type: 'address' }, { name: 'approver', type: 'address' },
+        { name: 'arbiter', type: 'address' }, { name: 'worker', type: 'address' },
+        { name: 'claimDeadline', type: 'uint64' }, { name: 'claimWindow', type: 'uint64' },
+        { name: 'claimNonce', type: 'uint64' }, { name: 'reviewWindow', type: 'uint64' },
+        { name: 'reviewDeadline', type: 'uint64' },
+        { name: 'rewardCreditedAmount', type: 'uint256' }, { name: 'settledAt', type: 'uint64' },
       ],
     }],
     stateMutability: 'view',
   },
-  {
-    type: 'function', name: 'postTask',
-    inputs: [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'uint64' }],
-    outputs: [{ type: 'uint256' }], stateMutability: 'payable',
-  },
-  { type: 'function', name: 'claim', inputs: [{ type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
-  { type: 'function', name: 'submitWork', inputs: [{ type: 'uint256' }, { type: 'bytes32' }], outputs: [], stateMutability: 'nonpayable' },
-  { type: 'function', name: 'approve', inputs: [{ type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
-  { type: 'function', name: 'cancel', inputs: [{ type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
 ] as const
 
-/** Reputation — append-only, one writer, fixed at construction. */
+/**
+ * Reputation — the per-market worker ledger, one writer fixed at initialize.
+ *
+ * `reputationOf` answers the whole record in one call, so `completedOf` and
+ * `earnedOf` would be the same two numbers read again and are not declared.
+ * The counts are uint64: a count of finished work, not a token balance.
+ */
 export const reputation = [
   { type: 'function', name: 'writer', inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view' },
-  { type: 'function', name: 'score', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
-  { type: 'function', name: 'completed', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  {
+    type: 'function', name: 'reputationOf', inputs: [{ type: 'address' }],
+    outputs: [
+      { name: 'completed', type: 'uint64' }, { name: 'disputesLost', type: 'uint64' },
+      { name: 'totalEarned', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
 ] as const
 
 /** Roles — the successor to hats. Ids are 1-based and ROOT is 1. */
