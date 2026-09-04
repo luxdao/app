@@ -19,6 +19,7 @@
     "./chrome/boot": "./src/chrome/boot.ts",
     "./chrome/gui": "./src/chrome/gui.ts",
     "./chrome/here": "./src/chrome/here.ts",
+    "./chrome/id": "./src/chrome/id.ts",
     "./chrome/theme": "./src/chrome/theme.ts",
     "./chrome/wallet": "./src/chrome/wallet.ts",
     "./chrome/*": "./src/chrome/*.tsx",
