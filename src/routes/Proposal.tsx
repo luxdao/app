@@ -28,6 +28,8 @@ export default function Proposal() {
   const { id } = useParams()
   const session = wallet.use()
   const list = useRead(() => proposals(here), [here.key])
+  /** Whether the register has been read AND carries this id, which decides who names the screen. */
+  const found = list.at === 'read' && list.value.some((r) => r.id.toString() === id)
   const gov = useRead(() => machine(here), [here.key])
   const [why, setWhy] = useState<string | null>(null)
   const [sent, setSent] = useState<string | null>(null)
@@ -59,15 +61,34 @@ export default function Proposal() {
   }
 
   return (
-    <Reading of={list} what="the proposal register">
-      {(rows) => {
+    /**
+     * The heading is outside the reading, and that is the point.
+     *
+     * `Reading` draws the refusal, the absence and the empty answer itself, and
+     * none of those cards carries an h1 — so a screen whose only content was
+     * inside it lost its name in exactly the states where a reader most needs
+     * to know which screen they are looking at. The screen is titled first and
+     * the reading is placed under the title; the proposal's own title replaces
+     * this one as soon as there is a proposal to name.
+     */
+    <YStack gap="$6">
+      {found ? null : (
+        <Title
+          lede={
+            list.at === 'read'
+              ? 'No proposal with this id has been created on this Governor.'
+              : `A proposal on the ${here.name} Governor. Which one is read from the register below.`
+          }
+        >
+          {list.at === 'read' ? 'Nothing to show' : `Proposal ${id ?? ''}`}
+        </Title>
+      )}
+      <Reading of={list} what="the proposal register">
+        {(rows) => {
         const p = rows.find((r) => r.id.toString() === id)
         if (!p) {
           return (
             <YStack gap="$6">
-              <Title lede="No proposal with this id has been created on this Governor.">
-                Nothing to show
-              </Title>
               <Answer
                 title="This link names no proposal"
                 detail={
@@ -190,7 +211,8 @@ export default function Proposal() {
             ) : null}
           </YStack>
         )
-      }}
-    </Reading>
+        }}
+      </Reading>
+    </YStack>
   )
 }
