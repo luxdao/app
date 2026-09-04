@@ -15,6 +15,7 @@ import { Facts, fact } from '../parts/facts'
 import { Panel, Title } from '../parts/panel'
 import { REACH, bad, good, line, plain, quiet, ring, surface } from '../parts/paint'
 import { units } from '../read/governance'
+import { NOBODY } from '../read/power'
 import { VE, WEEK, decay, ends, escrow, expired, holding, left, type Escrow, type Holding, type Ve } from '../read/ve'
 
 /** A tick of a timestamp clock, as a sentence. */
@@ -111,16 +112,20 @@ function Open({ it: e, ve }: { it: Escrow; ve: Ve }) {
 
   const [amount, setAmount] = useState('')
   const [weeks, setWeeks] = useState('52')
+  const [to, setTo] = useState('')
   const [why, setWhy] = useState<string | null>(null)
   const [sent, setSent] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const amountAt = useId()
   const weeksAt = useId()
+  const toAt = useId()
 
   const t = now()
   const running = e.mine.amount > 0n && !expired(e.mine.end, t)
   const done = expired(e.mine.end, t)
   const modelled = decay(e.mine.amount, e.mine.end, t, e.max)
+  /** Weight that exists and counts for nobody, which is one transaction away from counting. */
+  const undelegated = e.mine.votes !== null && e.mine.power > 0n && e.mine.votes === 0n
 
   /** Every write on this screen, so the wallet checks happen in one place. */
   const send = async (build: () => { to: `0x${string}`; abi: readonly unknown[]; call: { functionName: string; args: readonly unknown[] } }) => {
@@ -214,6 +219,19 @@ function Open({ it: e, ve }: { it: Escrow; ve: Ve }) {
                 ...(ve.decays
                   ? [fact('Weight the decay line predicts', `${units(modelled, e.decimals)} ${e.symbol}`)]
                   : []),
+                ...(e.mine.votes === null
+                  ? []
+                  : [
+                      fact('Votes a Governor would count', `${units(e.mine.votes, e.decimals)} ${e.symbol}`),
+                      fact(
+                        'Delegated to',
+                        e.mine.delegate && e.mine.delegate !== NOBODY ? (
+                          <Address at={e.mine.delegate} explorer={here.explorer} />
+                        ) : (
+                          'nobody'
+                        ),
+                      ),
+                    ]),
               ]}
             />
             {done ? (
@@ -221,9 +239,69 @@ function Open({ it: e, ve }: { it: Escrow; ve: Ve }) {
                 The lock has ended. It carries no weight and the tokens can be withdrawn.
               </Paragraph>
             ) : null}
+            {undelegated ? (
+              <Paragraph size="$3" margin={0} color={quiet}>
+                This lock is worth {units(e.mine.power, e.decimals)} {e.symbol} and none of it can
+                vote. Weight has to be pointed at an address before a Governor counts it, and
+                pointing it at your own is what most holders mean — it moves nothing and it is the
+                step people miss. Until it is taken the lock still raises the quorum every proposal
+                has to clear, because the total a quorum is measured against counts every lock
+                whether it was delegated or not.
+              </Paragraph>
+            ) : null}
           </YStack>
         )}
       </Panel>
+
+      {session && ve.delegable && ve.delegate ? (
+        <Panel title="Point the weight" note="Signed in your own wallet. Delegation moves no tokens.">
+          <YStack gap="$3">
+            <XStack gap="$2" flexWrap="wrap">
+              <Control
+                busy={busy}
+                onPress={() =>
+                  void send(() => ({
+                    to: e.address as `0x${string}`,
+                    abi: ve.abi,
+                    call: ve.delegate!(session.address),
+                  }))
+                }
+              >
+                Delegate to myself
+              </Control>
+            </XStack>
+            <YStack gap="$2" maxWidth={520}>
+              <Label htmlFor={toAt} size="$2" color={quiet}>
+                Or to another address
+              </Label>
+              <Input
+                id={toAt}
+                value={to}
+                onChangeText={setTo}
+                placeholder="0x…"
+                color={plain}
+                borderColor={line}
+                minHeight={REACH + 16}
+              />
+              <XStack>
+                <Control
+                  busy={busy}
+                  off={to.length === 0}
+                  onPress={() =>
+                    void send(() => ({
+                      to: e.address as `0x${string}`,
+                      abi: ve.abi,
+                      call: ve.delegate!(to),
+                    }))
+                  }
+                >
+                  Delegate
+                </Control>
+              </XStack>
+            </YStack>
+          </YStack>
+        </Panel>
+      ) : null}
 
       <Panel
         title={running ? 'Add to the lock, or extend it' : done ? 'Withdraw' : 'Lock'}
