@@ -71,6 +71,17 @@ export interface Ve {
   readonly slot: Slot
   readonly abi: readonly unknown[]
   readonly delegable: boolean
+  /**
+   * Whether weight falls as the lock runs down.
+   *
+   * Both kinds exist. A Curve-style escrow mints a bias and a slope, so weight
+   * is a straight line to zero and a lock is worth what is left of it. An
+   * escrow that mints a multiple of the deposit at the moment of locking gives
+   * weight that does not move until the lock ends and the tokens come out.
+   * Saying the second decays would tell a holder their weight is falling when
+   * it is not, so the screen asks rather than assumes.
+   */
+  readonly decays: boolean
   /** Everything true of the contract rather than of one account. */
   whole(ask: Ask): Promise<Omit<Escrow, 'address' | 'mine' | 'delegable'>>
   lockOf(ask: Ask, who: `0x${string}`): Promise<Lock>
@@ -93,6 +104,7 @@ export const CURVE: Ve = {
   slot: 'vlux',
   abi: abi.vlux,
   delegable: false,
+  decays: true,
 
   async whole(ask) {
     const [base, name, symbol, decimals, locked, supply, min, max, step] = await Promise.all([

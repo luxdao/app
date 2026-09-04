@@ -15,7 +15,7 @@ import { Facts, fact } from '../parts/facts'
 import { Panel, Title } from '../parts/panel'
 import { REACH, bad, good, line, plain, quiet, ring, surface } from '../parts/paint'
 import { units } from '../read/governance'
-import { VE, WEEK, decay, ends, escrow, expired, holding, left, type Escrow, type Holding } from '../read/ve'
+import { VE, WEEK, decay, ends, escrow, expired, holding, left, type Escrow, type Holding, type Ve } from '../read/ve'
 
 /** A tick of a timestamp clock, as a sentence. */
 const when = (tick: bigint) =>
@@ -68,25 +68,36 @@ function Control({
  * agree while the escrow is checkpointing, and a reader who is only shown one
  * of them has no way to tell.
  */
-export default function Stake() {
+export function Escrow({ ve = VE }: { ve?: Ve }) {
   const here = chain.use()
   const session = wallet.use()
   const who = session?.address ?? null
-  const it = useRead(() => escrow(here, who), [here.key, who])
+  const it = useRead(() => escrow(here, who, ve), [here.key, who, ve])
 
   return (
     <YStack gap="$6">
-      <Title lede="Locking a token mints weight that decays to nothing at the end of the lock. The tokens come back when it ends, and not before.">
+      <Title
+        lede={
+          ve.decays
+            ? 'Locking a token mints weight that decays to nothing at the end of the lock. The tokens come back when it ends, and not before.'
+            : 'Locking a token mints weight at a multiple set by the length of the lock. The tokens come back when it ends, and not before.'
+        }
+      >
         Vote escrow
       </Title>
       <Reading of={it} what="the vote-escrow contract">
-        {(e) => <Open it={e} />}
+        {(e) => <Open it={e} ve={ve} />}
       </Reading>
     </YStack>
   )
 }
 
-function Open({ it: e }: { it: Escrow }) {
+/** The screen this build serves at /stake, reading the escrow this build binds. */
+export default function Stake() {
+  return <Escrow />
+}
+
+function Open({ it: e, ve }: { it: Escrow; ve: Ve }) {
   const here = chain.use()
   const session = wallet.use()
   const who = session?.address ?? null
@@ -156,9 +167,10 @@ function Open({ it: e }: { it: Escrow }) {
         note={
           <>
             At <Address at={e.address} explorer={here.explorer} />, locking{' '}
-            <Address at={e.base} explorer={here.explorer} />. Weight falls in a straight line to zero
-            at the end of a lock: the same tokens locked twice as long are worth twice as much on the
-            day they are locked, and nothing on the day they come out.
+            <Address at={e.base} explorer={here.explorer} />.{' '}
+            {ve.decays
+              ? 'Weight falls in a straight line to zero at the end of a lock: the same tokens locked twice as long are worth twice as much on the day they are locked, and nothing on the day they come out.'
+              : 'Weight is minted once, at a multiple set by the length of the lock, and does not move again until the lock ends.'}
           </>
         }
       >
@@ -195,7 +207,9 @@ function Open({ it: e }: { it: Escrow }) {
                 fact('Ends', e.mine.end > 0n ? when(e.mine.end) : null, 'no lock'),
                 fact('Time left', e.mine.end > 0n ? days(left(e.mine.end, t)) : null, 'no lock'),
                 fact('Weight now', `${units(e.mine.power, e.decimals)} ${e.symbol}`),
-                fact('Weight the decay line predicts', `${units(modelled, e.decimals)} ${e.symbol}`),
+                ...(ve.decays
+                  ? [fact('Weight the decay line predicts', `${units(modelled, e.decimals)} ${e.symbol}`)]
+                  : []),
               ]}
             />
             {done ? (
@@ -275,8 +289,8 @@ function Open({ it: e }: { it: Escrow }) {
                   onPress={() =>
                     void send(() => ({
                       to: e.address as `0x${string}`,
-                      abi: VE.abi,
-                      call: VE.close(),
+                      abi: ve.abi,
+                      call: ve.close(),
                     }))
                   }
                 >
@@ -303,8 +317,8 @@ function Open({ it: e }: { it: Escrow }) {
                         onPress={() =>
                           void send(() => ({
                             to: e.address as `0x${string}`,
-                            abi: VE.abi,
-                            call: VE.add(wei()),
+                            abi: ve.abi,
+                            call: ve.add(wei()),
                           }))
                         }
                       >
@@ -315,8 +329,8 @@ function Open({ it: e }: { it: Escrow }) {
                         onPress={() =>
                           void send(() => ({
                             to: e.address as `0x${string}`,
-                            abi: VE.abi,
-                            call: VE.extend(ends(now(), span(), e.min, e.max, e.step)),
+                            abi: ve.abi,
+                            call: ve.extend(ends(now(), span(), e.min, e.max, e.step)),
                           }))
                         }
                       >
@@ -329,8 +343,8 @@ function Open({ it: e }: { it: Escrow }) {
                       onPress={() =>
                         void send(() => ({
                           to: e.address as `0x${string}`,
-                          abi: VE.abi,
-                          call: VE.open(wei(), ends(now(), span(), e.min, e.max, e.step)),
+                          abi: ve.abi,
+                          call: ve.open(wei(), ends(now(), span(), e.min, e.max, e.step)),
                         }))
                       }
                     >

@@ -117,6 +117,10 @@ describe('the Curve-shaped escrow', () => {
    * There is no `delegate` on this contract and no `getVotes`. A screen that
    * offered delegation here would offer a transaction that cannot be built.
    */
+  it('says weight falls, because on this one it does', () => {
+    expect(CURVE.decays).toBe(true)
+  })
+
   it('does not offer delegation the contract has no function for', () => {
     expect(CURVE.delegable).toBe(false)
     const names = (CURVE.abi as { name?: string }[]).map((m) => m.name)
