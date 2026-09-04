@@ -1,5 +1,5 @@
 import { Button } from '@hanzogui/button'
-import { BRAND } from './brand'
+import { brand } from './brand'
 import { Popover, PopoverContent, PopoverTrigger } from '@hanzogui/popover'
 import { XStack, YStack } from '@hanzogui/stacks'
 import { SizableText } from '@hanzogui/text'
@@ -10,7 +10,14 @@ import { useWalk } from '../parts/link'
 import { Connect } from './connect'
 import * as chain from './here'
 
-const WHERE = [
+/** A place in the header: where it goes, and what it is called. */
+export type Place = readonly [to: string, label: string]
+
+/**
+ * The screens this stack serves. A fork adds its own with `more`, which is
+ * appended rather than merged — the base's order is the base's to keep.
+ */
+export const WHERE: readonly Place[] = [
   ['/', 'Overview'],
   ['/proposals', 'Proposals'],
   ['/delegate', 'Voting power'],
@@ -18,8 +25,9 @@ const WHERE = [
   ['/work', 'Work'],
   ['/roles', 'Roles'],
   ['/karma', 'Karma'],
+  ['/stake', 'Vote escrow'],
   ['/deployment', 'Deployment'],
-] as const
+]
 
 function Where({ to, label, panel, done }: { to: string; label: string; panel?: boolean; done?: () => void }) {
   const { pathname } = useLocation()
@@ -108,8 +116,10 @@ function Chain() {
   )
 }
 
-export function Nav() {
+export function Nav({ more = [] }: { more?: readonly Place[] }) {
   const [menu, setMenu] = useState(false)
+  const it = brand()
+  const where = [...WHERE, ...more]
   return (
     <YStack
       render="header"
@@ -141,18 +151,18 @@ export function Nav() {
             whiteSpace="nowrap"
             flexShrink={0}
             gap="$2"
-            aria-label={`${BRAND.name} Vote`}
+            aria-label={`${it.name} Vote`}
           >
             {/* The tenant's own mark and the word the mark does not already
                 say. Drawn, not fetched — an <img> lands after a round trip and
                 shifts the row it sits in, on the first thing a person looks at.
                 It takes currentColor, so it moves with the theme rather than
                 with the desktop. */}
-            <BRAND.mark />
-            {BRAND.word}
+            <it.mark />
+            {it.word}
           </SizableText>
           <XStack gap="$4" display="none" $gtSm={{ display: 'flex' }} alignItems="center" flexWrap="wrap">
-            {WHERE.map(([to, label]) => (
+            {where.map(([to, label]) => (
               <Where key={to} to={to} label={label} />
             ))}
           </XStack>
@@ -189,7 +199,7 @@ export function Nav() {
               backgroundColor={surface}
             >
               <YStack gap="$1" minWidth={200}>
-                {WHERE.map(([to, label]) => (
+                {where.map(([to, label]) => (
                   <Where key={to} to={to} label={label} panel done={() => setMenu(false)} />
                 ))}
               </YStack>

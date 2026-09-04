@@ -176,20 +176,58 @@ export function tenant(host: string, brands: readonly Brand[] = BRANDS): Brand |
  * when it is reached by a name nothing branded, and a developer on 127.0.0.1
  * gets Lux because that is what the default build says.
  *
- * An unknown key throws at load rather than falling back to Lux, and
- * `vite.config.ts` refuses the same value at configuration so the cost is a
- * failed build and not a failed site.
+ * An unknown key throws rather than falling back to Lux, and `vite.config.ts`
+ * refuses the same value at configuration so the cost is a failed build and not
+ * a failed site.
+ *
+ * ## The list is open, and read late
+ *
+ * pars.vote is a fork of this source, and a site is the whole of what it adds:
+ * the reads, the screens and this chrome are imported from here. So a fork
+ * calls `add()` once with its own tenant and every screen is its screen from
+ * then on.
+ *
+ * The choice is made on the first read rather than at module load, and that is
+ * what makes the order of a fork's imports stop mattering. An ES module graph
+ * evaluates every import before any of the importing file's own statements, so
+ * a registration written at the top of a fork's entry file still runs after the
+ * module it registers with has finished loading — and a tenant added to a list
+ * that was already read is a site that silently serves somebody else's DAO.
+ * Deferring the read is the same discipline `createGui` follows, for the same
+ * reason.
  */
-const wanted = import.meta.env.VITE_VOTE_HOME ?? 'lux'
-const built = BRANDS.find((b) => b.key === wanted)
-if (!built) {
-  throw new Error(
-    `VITE_VOTE_HOME names "${wanted}", which is not a tenant. Known: ${BRANDS.map((b) => b.key).join(', ')}.`,
-  )
+const extra: Brand[] = []
+
+let chosen: Brand | undefined
+
+/**
+ * Add a tenant. Before the first render, and it says so if it is not: a late
+ * addition would leave the site already drawn under the wrong name.
+ */
+export function add(...brands: Brand[]): void {
+  if (chosen) {
+    throw new Error(`Tenant ${brands.map((b) => b.key).join(', ')} was added after the site had already been decided.`)
+  }
+  extra.push(...brands)
 }
 
+/** Every tenant this build serves: the three here, plus whatever a fork added. */
+export const brands = (): readonly Brand[] => [...BRANDS, ...extra]
+
 /** Which site this document is. */
-export const BRAND: Brand = tenant(globalThis.location?.hostname ?? '') ?? built
+export function brand(): Brand {
+  if (chosen) return chosen
+  const all = brands()
+  const wanted = import.meta.env.VITE_VOTE_HOME ?? 'lux'
+  const built = all.find((b) => b.key === wanted)
+  if (!built) {
+    throw new Error(
+      `VITE_VOTE_HOME names "${wanted}", which is not a tenant. Known: ${all.map((b) => b.key).join(', ')}.`,
+    )
+  }
+  chosen = tenant(globalThis.location?.hostname ?? '', all) ?? built
+  return chosen
+}
 
 /** The chain it opens on. */
-export const HOME: Venue = BRAND.venue
+export const home = (): Venue => brand().venue

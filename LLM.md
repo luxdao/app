@@ -69,8 +69,59 @@ bundle. The build-time value is what a host that belongs to nobody gets —
 a container reached by an unbranded name is still itself.
 
 Pars is a readable chain here and **not** a tenant. pars.vote is served from a
-fork of this source, which adds its own entry: `BRANDS` is a value and
-`tenant()` takes the list as an argument, so a fork extends rather than edits.
+fork of this source, which adds its own entry with `add()` — see the boundary
+below. The list is open and the choice is made on the first read, which is what
+makes a fork's registration land in time.
+
+`brand()` and `home()` are functions rather than the constants they were. The
+reason is import order: an ES module graph evaluates every import before any of
+the importing file's own statements, so a fork's `add(PARS)` written at the top
+of its entry file still runs after this module has finished loading. Reading the
+list on first render instead of at load is what makes the registration land, and
+`add()` throws if it arrives after the site has been decided rather than
+silently serving somebody else's DAO. `chrome/here.ts` defers for the same
+reason — the chain it falls back to is the tenant's, so it cannot be fixed
+while this module is still being imported.
+
+## The stack boundary: what a fork imports
+
+lux.vote, zoo.vote and hanzo.vote are one build with three names. **pars.vote is
+a fork**, because it adds screens rather than a name — a vote-escrow lock on its
+own token, a bond market, a network of sub-DAOs — and a tenant flag on a screen
+nobody else has is how one app becomes two apps wearing one binary.
+
+A fork depends on this repository and imports from it. There is no build step
+and none was added: `package.json` has an `exports` map that publishes `src/`
+by subpath as TypeScript, which is what `@hanzogui/element` already does and
+what the consumer's bundler already handles.
+
+    "@luxfi/vote": "github:luxfi/vote#<sha>"
+
+    import App, { screen } from '@luxfi/vote'
+    import { add } from '@luxfi/vote/chrome/brand'
+    import { escrow } from '@luxfi/vote/read/ve'
+    import { Panel, Title } from '@luxfi/vote/parts/panel'
+
+Pinned to a commit, because this is a source dependency and a moving branch
+would change a fork's screens without a version to point at.
+
+What the boundary is, exactly:
+
+- **`App`** takes `more` — route elements appended before the catch-all — and
+  `places`, the header entries that reach them. Those two props are the whole of
+  what a fork adds to the shell. Everything else is the same code on every site.
+- **`screen(where, element)`** is exported so a fork's routes get the same error
+  boundary and the same fallback as the ones it imported. A fork that wrote its
+  own would have routes that fail differently from the rest of the app.
+- **`add(brand)`** registers the fork's tenant, before render.
+- **`gov/*`, `read/*`, `parts/*`, `routes/*`, `chrome/*`** are all importable.
+  A fork's reads are written against `gov/client`'s `presence`/`reader` and
+  return `gov/read`'s four-state `Read`, so its screens can use `Reading` and
+  say the same four sentences this one does.
+
+The scope is `@luxfi`. `@luxvote` does not exist on npm and inventing a scope
+for one package is a second namespace to keep. Nothing here is published: it is
+a git dependency, which is also why `private: true` stays.
 
 The lockup is the mark plus **what the mark does not already say**. The Lux mark
 is the letters L and X, so the word beside it is "Vote"; the Zoo and Hanzo marks

@@ -5,6 +5,25 @@
   "type": "module",
   "license": "LicenseRef-Lux-Ecosystem-1.2",
   "packageManager": "pnpm@9.15.9",
+  "sideEffects": [
+    "./src/main.tsx",
+    "./src/ground.css"
+  ],
+  "exports": {
+    ".": "./src/App.tsx",
+    "./gov/*": "./src/gov/*.ts",
+    "./read/*": "./src/read/*.ts",
+    "./routes/*": "./src/routes/*.tsx",
+    "./parts/paint": "./src/parts/paint.ts",
+    "./parts/*": "./src/parts/*.tsx",
+    "./chrome/boot": "./src/chrome/boot.ts",
+    "./chrome/gui": "./src/chrome/gui.ts",
+    "./chrome/here": "./src/chrome/here.ts",
+    "./chrome/theme": "./src/chrome/theme.ts",
+    "./chrome/wallet": "./src/chrome/wallet.ts",
+    "./chrome/*": "./src/chrome/*.tsx",
+    "./ground.css": "./src/ground.css"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5288 --strictPort",
     "build": "vite build",

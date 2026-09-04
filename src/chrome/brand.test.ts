@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { BRAND, BRANDS, HOME, type Brand, tenant } from './brand'
+import { describe, expect, it, vi } from 'vitest'
+import { BRANDS, type Brand, brand, home, tenant } from './brand'
 
 describe('the tenants this bundle serves', () => {
   it('is lux, zoo and hanzo', () => {
@@ -67,7 +67,35 @@ describe('a host names its tenant', () => {
  */
 describe('with no host to read', () => {
   it('falls back to the tenant the build was told to be', () => {
-    expect(BRAND.key).toBe('lux')
-    expect(HOME.id).toBe(96369)
+    expect(brand().key).toBe('lux')
+    expect(home().id).toBe(96369)
+  })
+})
+
+/**
+ * What a fork does, and the failure the timing guard is for.
+ *
+ * The modules are reloaded for each case because the choice is made once and
+ * kept: that is the point of it, and a test that shared one would be measuring
+ * whichever case ran first.
+ */
+describe('a fork adding its own site', () => {
+  it('serves the fork\'s tenant when the build names it', async () => {
+    vi.resetModules()
+    vi.stubEnv('VITE_VOTE_HOME', 'elsewhere')
+    const m = await import('./brand')
+    const lux = m.BRANDS[0]!
+    m.add({ ...lux, key: 'elsewhere', name: 'Elsewhere', word: 'Elsewhere Vote' })
+    expect(m.brands().map((b) => b.key)).toEqual(['lux', 'zoo', 'hanzo', 'elsewhere'])
+    expect(m.brand().name).toBe('Elsewhere')
+    vi.unstubAllEnvs()
+  })
+
+  it('refuses a tenant added after the site has been decided', async () => {
+    vi.resetModules()
+    const m = await import('./brand')
+    expect(m.brand().key).toBe('lux')
+    const lux = m.BRANDS[0]!
+    expect(() => m.add({ ...lux, key: 'late' })).toThrow(/after the site had already been decided/)
   })
 })

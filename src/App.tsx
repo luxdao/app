@@ -2,7 +2,7 @@ import { YStack } from '@hanzogui/stacks'
 import { Heading, Paragraph, SizableText } from '@hanzogui/text'
 import { Component, Fragment, Suspense, lazy, type ReactNode } from 'react'
 import { Route, Routes } from 'react-router'
-import { Nav } from './chrome/nav'
+import { Nav, type Place } from './chrome/nav'
 import * as chain from './chrome/here'
 import { COLUMN, INSET, line, plain, quiet } from './parts/paint'
 import { Link } from './parts/link'
@@ -20,6 +20,7 @@ const Proposals = lazy(() => import('./routes/Proposals'))
 const Proposal = lazy(() => import('./routes/Proposal'))
 const Propose = lazy(() => import('./routes/Propose'))
 const Delegate = lazy(() => import('./routes/Delegate'))
+const Stake = lazy(() => import('./routes/Stake'))
 const Treasury = lazy(() => import('./routes/Treasury'))
 const Work = lazy(() => import('./routes/Work'))
 const Roles = lazy(() => import('./routes/Roles'))
@@ -69,7 +70,14 @@ class Boundary extends Component<{ where: string; children: ReactNode }, { why: 
   }
 }
 
-const screen = (where: string, element: ReactNode) => (
+/**
+ * A screen, wrapped in the two things every screen needs: a boundary that still
+ * draws a heading when the screen throws, and a fallback while it arrives.
+ *
+ * Exported because a fork's screens need the same two, and a fork that wrote
+ * its own would have routes that fail differently from the ones it imported.
+ */
+export const screen = (where: string, element: ReactNode) => (
   <Boundary where={where}>
     <Suspense
       fallback={
@@ -85,11 +93,19 @@ const screen = (where: string, element: ReactNode) => (
   </Boundary>
 )
 
-export default function App() {
+/**
+ * The interface.
+ *
+ * `more` and `places` are the whole of what a fork adds: its routes, and the
+ * header entries that reach them. Everything else — the shell, the chain key,
+ * the footer, the boundary — is the same code on every site, which is what
+ * keeps a fork from drifting into a different app.
+ */
+export default function App({ more, places }: { more?: ReactNode; places?: readonly Place[] } = {}) {
   const here = chain.use()
   return (
     <YStack minHeight="100vh" backgroundColor="var(--color-bg-body)">
-      <Nav />
+      <Nav more={places} />
       {/* Keyed on the chain, so changing it discards every in-flight read
           rather than letting one land against the wrong chain's screen. */}
       <Fragment key={here.key}>
@@ -110,6 +126,7 @@ export default function App() {
             <Route path="/proposals/new" element={screen('propose', <Propose />)} />
             <Route path="/proposals/:id" element={screen('proposal', <Proposal />)} />
             <Route path="/delegate" element={screen('delegate', <Delegate />)} />
+            <Route path="/stake" element={screen('stake', <Stake />)} />
             <Route path="/treasury" element={screen('treasury', <Treasury />)} />
             <Route path="/work" element={screen('work', <Work />)} />
             <Route path="/roles" element={screen('roles', <Roles />)} />
@@ -117,6 +134,7 @@ export default function App() {
             <Route path="/gauges" element={screen('gauges', <Gauges />)} />
             <Route path="/deployment" element={screen('deployment', <Deployment />)} />
             <Route path="/settings" element={screen('settings', <Settings />)} />
+            {more}
             <Route path="*" element={screen('missing', <Missing />)} />
           </Routes>
         </YStack>

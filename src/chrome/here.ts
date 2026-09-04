@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { VENUES, venue, type Venue } from '../gov/chain'
 // The chain to open on is the TENANT's, not the registry's: lux.vote opens on
 // Lux and hanzo.vote on Hanzo, from one build.
-import { HOME } from './brand'
+import { home } from './brand'
 
 /**
  * Which chain the interface is reading.
@@ -17,13 +17,19 @@ const KEY = 'vote.chain'
 function stored(): Venue {
   try {
     const k = localStorage.getItem(KEY)
-    return (k && venue(k)) || HOME
+    return (k && venue(k)) || home()
   } catch {
-    return HOME
+    return home()
   }
 }
 
-let current: Venue = stored()
+/**
+ * Read on first ask rather than at module load, because the tenant it falls
+ * back to is decided on first ask too — a fork registers its own before
+ * anything renders, and a chain fixed while this module was being imported
+ * would be fixed before the registration had run.
+ */
+let current: Venue | null = null
 const listeners = new Set<() => void>()
 
 export function go(v: Venue): void {
@@ -41,6 +47,6 @@ const watch = (l: () => void) => {
   return () => void listeners.delete(l)
 }
 
-export const here = (): Venue => current
-export const use = (): Venue => useSyncExternalStore(watch, here, () => HOME)
+export const here = (): Venue => (current ??= stored())
+export const use = (): Venue => useSyncExternalStore(watch, here, here)
 export { VENUES }
