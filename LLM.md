@@ -107,9 +107,12 @@ would change a fork's screens without a version to point at.
 
 What the boundary is, exactly:
 
-- **`App`** takes `more` — route elements appended before the catch-all — and
+- **`App`** takes `more` — route elements, ranked AHEAD of the base's — and
   `places`, the header entries that reach them. Those two props are the whole of
-  what a fork adds to the shell. Everything else is the same code on every site.
+  what a fork adds to the shell. Ahead rather than after, so a fork can replace
+  a screen as well as add one: two routes with the same path rank equally and
+  the first is taken, so pars.vote's `/stake` is the stack's escrow screen
+  reading Pars's escrow, and there is one screen at that path rather than two.
 - **`screen(where, element)`** is exported so a fork's routes get the same error
   boundary and the same fallback as the ones it imported. A fork that wrote its
   own would have routes that fail differently from the rest of the app.

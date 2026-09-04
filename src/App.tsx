@@ -121,6 +121,12 @@ export default function App({ more, places }: { more?: ReactNode; places?: reado
           minWidth={0}
         >
           <Routes>
+            {/* A fork's routes are ranked ahead of the base's, so a fork can
+                replace a screen as well as add one — two routes with the same
+                path rank equally and the first is taken. `/stake` on pars.vote
+                is the stack's escrow screen reading Pars's escrow, and there is
+                one screen at that path rather than two. */}
+            {more}
             <Route path="/" element={screen('overview', <Overview />)} />
             <Route path="/proposals" element={screen('proposals', <Proposals />)} />
             <Route path="/proposals/new" element={screen('propose', <Propose />)} />
@@ -134,7 +140,6 @@ export default function App({ more, places }: { more?: ReactNode; places?: reado
             <Route path="/gauges" element={screen('gauges', <Gauges />)} />
             <Route path="/deployment" element={screen('deployment', <Deployment />)} />
             <Route path="/settings" element={screen('settings', <Settings />)} />
-            {more}
             <Route path="*" element={screen('missing', <Missing />)} />
           </Routes>
         </YStack>
