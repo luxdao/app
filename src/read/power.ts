@@ -1,6 +1,6 @@
 import * as abi from '../gov/abi'
 import type { Venue } from '../gov/chain'
-import { client, presence, reader } from '../gov/client'
+import { presence, reader } from '../gov/client'
 import { attempt, type Read } from '../gov/read'
 
 /**
@@ -45,32 +45,9 @@ export async function power(v: Venue, who: `0x${string}` | null): Promise<Read<P
   })
 }
 
-/** vLUX — the vote-escrow lock, which is a separate instrument from the tally. */
-export interface Escrow {
-  address: string
-  name: string
-  symbol: string
-  totalLocked: bigint
-  totalSupply: bigint
-  minLock: bigint
-  maxLock: bigint
-  locked: bigint
-  until: bigint
-}
-
-export async function escrow(v: Venue, who: `0x${string}` | null): Promise<Read<Escrow>> {
-  const here = await presence(v, 'vlux')
-  if (here.at !== 'read') return here
-  const address = here.value.address
-  return attempt(async () => {
-    const one = reader(v, address, abi.vlux)
-    const [name, symbol, totalLocked, totalSupply, minLock, maxLock] = await Promise.all([
-      one<string>('name'), one<string>('symbol'), one<bigint>('totalLocked'),
-      one<bigint>('totalSupply'), one<bigint>('MIN_LOCK_TIME'), one<bigint>('MAX_LOCK_TIME'),
-    ])
-    const mine = who
-      ? await one<readonly [bigint, bigint]>('getLocked', [who])
-      : ([0n, 0n] as const)
-    return { address, name, symbol, totalLocked, totalSupply, minLock, maxLock, locked: mine[0], until: mine[1] }
-  })
-}
+/**
+ * The escrow was read here too, against the same contract under a second set of
+ * names for the same values. It reads in `read/ve` now, through an adapter,
+ * because the estate has more than one shape of escrow and two copies of the
+ * reading would have drifted at the first one that arrived.
+ */

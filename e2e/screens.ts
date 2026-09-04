@@ -12,6 +12,7 @@ export const SCREENS = [
   // than throw, and it is the only route here that reads a path parameter.
   '/proposals/0',
   '/delegate',
+  '/stake',
   '/treasury',
   '/work',
   '/roles',

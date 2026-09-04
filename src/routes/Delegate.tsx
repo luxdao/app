@@ -13,8 +13,9 @@ import { Reading } from '../parts/answer'
 import { Facts, fact } from '../parts/facts'
 import { Panel, Title } from '../parts/panel'
 import { REACH, bad, good, line, plain, quiet, ring, surface } from '../parts/paint'
+import { Link } from '../parts/link'
 import { units } from '../read/governance'
-import { NOBODY, escrow, power } from '../read/power'
+import { NOBODY, power } from '../read/power'
 
 /**
  * Voting power, and the gap between holding and being able to vote.
@@ -28,7 +29,6 @@ export default function Delegate() {
   const here = chain.use()
   const session = wallet.use()
   const mine = useRead(() => power(here, session?.address ?? null), [here.key, session?.address])
-  const lock = useRead(() => escrow(here, session?.address ?? null), [here.key, session?.address])
   const [to, setTo] = useState('')
   const [why, setWhy] = useState<string | null>(null)
   const [sent, setSent] = useState<string | null>(null)
@@ -179,29 +179,13 @@ export default function Delegate() {
         )}
       </Reading>
 
-      <Reading of={lock} what="the vote-escrow contract">
-        {(e) => (
-          <Panel
-            title={e.name}
-            note={
-              <>
-                A separate instrument from the tally: {e.symbol} is earned by locking, and its weight
-                decays as the lock runs down. At <Address at={e.address} explorer={here.explorer} />.
-              </>
-            }
-          >
-            <Facts
-              rows={[
-                fact('Total locked', units(e.totalLocked, 18)),
-                fact('Escrow supply', units(e.totalSupply, 18)),
-                fact('Shortest lock', `${Number(e.minLock) / 86400} days`),
-                fact('Longest lock', `${Math.round(Number(e.maxLock) / 86400)} days`),
-                fact('Your lock', session ? units(e.locked, 18) : null, 'no wallet connected'),
-              ]}
-            />
-          </Panel>
-        )}
-      </Reading>
+      <Panel title="Escrow weight is counted separately">
+        <Paragraph size="$3" margin={0} color={quiet}>
+          Locking is the other way weight is held, and it is not this token. A lock mints weight that
+          decays to nothing at the end of the lock, and on the escrow deployed here that weight
+          cannot be delegated at all. <Link href="/stake">Vote escrow</Link> reads it.
+        </Paragraph>
+      </Panel>
     </YStack>
   )
 }

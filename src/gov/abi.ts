@@ -104,6 +104,22 @@ export const votes = [
   },
 ] as const
 
+/**
+ * A plain ERC20, for a token this interface holds no other opinion about.
+ *
+ * The token an escrow locks is one of these and need not be a votes token: the
+ * weight is minted by the escrow, so the asset underneath only has to be
+ * transferable. `allowance` and `approve` are here because a lock is two
+ * transactions and the first one is easy to leave out of a screen.
+ */
+export const erc20 = [
+  { type: 'function', name: 'symbol', inputs: [], outputs: [{ type: 'string' }], stateMutability: 'view' },
+  { type: 'function', name: 'decimals', inputs: [], outputs: [{ type: 'uint8' }], stateMutability: 'view' },
+  { type: 'function', name: 'balanceOf', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'allowance', inputs: [{ type: 'address' }, { type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'approve', inputs: [{ type: 'address' }, { type: 'uint256' }], outputs: [{ type: 'bool' }], stateMutability: 'nonpayable' },
+] as const
+
 /** OZ TimelockController — the treasury's gate. */
 export const timelock = [
   { type: 'function', name: 'getMinDelay', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
@@ -206,15 +222,24 @@ export const roles = [
 export const vlux = [
   { type: 'function', name: 'name', inputs: [], outputs: [{ type: 'string' }], stateMutability: 'view' },
   { type: 'function', name: 'symbol', inputs: [], outputs: [{ type: 'string' }], stateMutability: 'view' },
+  { type: 'function', name: 'decimals', inputs: [], outputs: [{ type: 'uint8' }], stateMutability: 'view' },
+  /** The token that gets locked. Named for the asset on this contract. */
+  { type: 'function', name: 'lux', inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view' },
   { type: 'function', name: 'totalSupply', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'totalLocked', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'balanceOf', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'MIN_LOCK_TIME', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'MAX_LOCK_TIME', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  /** The step a lock end is floored to, and the reason `ends()` rounds up. */
+  { type: 'function', name: 'WEEK', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   {
     type: 'function', name: 'getLocked', inputs: [{ type: 'address' }],
     outputs: [{ name: 'amount', type: 'uint256' }, { name: 'end', type: 'uint256' }], stateMutability: 'view',
   },
+  { type: 'function', name: 'createLock', inputs: [{ type: 'uint256' }, { type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'increaseAmount', inputs: [{ type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'increaseUnlockTime', inputs: [{ type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'withdraw', inputs: [], outputs: [], stateMutability: 'nonpayable' },
 ] as const
 
 /** GaugeController — vLUX-weighted fee direction. Gauge ids are 0-based. */
