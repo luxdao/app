@@ -140,7 +140,7 @@ them there would put "Lux Vote" in hanzo.vote's tab until the bundle parsed.
 
 ## Endpoints: use the path form or a browser sees nothing
 
-Every venue's RPC is `https://api.<org>.network/v1/chain/C/rpc`, never the bare
+Every venue's RPC is `https://api.<org>.network/v1/chain/c/rpc`, never the bare
 host. The bare host serves the same chain to `curl` and refuses a browser:
 its gateway answers the CORS preflight with **405** and sends no
 `access-control-allow-origin`. That arrives as a network error carrying no
@@ -156,7 +156,7 @@ deliberately, ahead of the fleet.
 
 The running nodes are older than that release: `info.getNodeVersion` answers
 luxd/1.36.148, thirty-one patches short of the one that renames the segment.
-Measured 2026-09-01, `/v1/bc/C/rpc` answers 200 and `/v1/chain/C/rpc` returns
+Measured 2026-09-01, `/v1/bc/C/rpc` answers 200 and `/v1/chain/c/rpc` returns
 404 on all four of api.lux, api.zoo, api.pars and api.hanzo — each returning
 its own chain id, so the fleet is healthy and simply older than the spelling.
 
