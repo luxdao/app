@@ -13,15 +13,14 @@ import { getChain } from '@luxwallet/chains'
  * Identity — name, symbol, EIP-155 id — comes from `@luxwallet/chains` so this
  * file does not become a second roster that drifts from the first.
  *
- * The segment is `bc`, not `chain`. `luxd` registers exactly one route prefix,
- * read from constants.ChainAliasPrefix, so the two names never answer together
- * on one node: v1.6.2 spells it `bc`, v1.6.4 spells it `chain`, and a node
- * serves whichever its build pinned. luxfi/universe already declares the version
- * that serves the new name — luxd 1.36.181 — but every validator still reports
- * 1.36.148, and the StatefulSet updates OnDelete, so the promotion is a
- * deliberate recycle that has not happened. Measured just now, all four venues
- * answer 200 on `bc` and 404 on `chain`. Move this when a probe says the nodes
- * have moved, not when the source has.
+ * The segment is `chain`, which is the estate's declared form: `luxfi/universe`
+ * records `rpcPath: /v1/chain/C/rpc`, the exchange asks it, and the gateway in
+ * front of the nodes is what answers it. `luxd` itself registers one route
+ * prefix from constants.ChainAliasPrefix — older builds spell it `bc`, newer
+ * ones `chain` — and the mainnet node measured today answers `bc` and 404s
+ * `chain`, so the gateway carries the translation until the nodes move. The
+ * paths here are the estate's, not a node's; a build pinned to a node's own
+ * spelling breaks the day the node is recycled.
  *
  * Every endpoint is the path form and not the bare host, because only
  * the path form answers a browser. `https://api.lux.network` serves the same
@@ -152,11 +151,11 @@ export const VENUES: readonly Venue[] = [
   ...(import.meta.env.DEV
     ? [
         {
-          id: 96369,
+          id: 96368,
           key: 'local' as const,
           name: 'Lux local',
           symbol: 'LUX',
-          rpc: 'http://127.0.0.1:8545',
+          rpc: 'http://127.0.0.1:9750/v1/chain/C/rpc',
           explorer: null,
           at: {
             governor: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',

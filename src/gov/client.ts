@@ -2,15 +2,15 @@ import { createPublicClient, http, type Address, type PublicClient } from 'viem'
 import type { Slot, Venue } from './chain'
 import { absent, attempt, failed, read, unrecorded, type Read } from './read'
 
-const clients = new Map<number, PublicClient>()
+const clients = new Map<string, PublicClient>()
 
 export function client(v: Venue): PublicClient {
-  const had = clients.get(v.id)
+  const had = clients.get(v.key)
   if (had) return had
   const made = createPublicClient({
     transport: http(v.rpc, { timeout: 15_000, retryCount: 1 }),
   }) as PublicClient
-  clients.set(v.id, made)
+  clients.set(v.key, made)
   return made
 }
 
