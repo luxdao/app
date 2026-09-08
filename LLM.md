@@ -95,12 +95,12 @@ and none was added: `package.json` has an `exports` map that publishes `src/`
 by subpath as TypeScript, which is what `@hanzogui/element` already does and
 what the consumer's bundler already handles.
 
-    "@luxfi/vote": "github:luxfi/vote#<sha>"
+    "`@luxdao/app`": "github:luxdao/app#<sha>"
 
-    import App, { screen } from '@luxfi/vote'
-    import { add } from '@luxfi/vote/chrome/brand'
-    import { escrow } from '@luxfi/vote/read/ve'
-    import { Panel, Title } from '@luxfi/vote/parts/panel'
+    import App, { screen } from '`@luxdao/app`'
+    import { add } from '`@luxdao/app`/chrome/brand'
+    import { escrow } from '`@luxdao/app`/read/ve'
+    import { Panel, Title } from '`@luxdao/app`/parts/panel'
 
 Pinned to a commit, because this is a source dependency and a moving branch
 would change a fork's screens without a version to point at.
