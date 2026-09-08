@@ -5,7 +5,7 @@ import { XStack, YStack } from '@hanzogui/stacks'
 import { SizableText } from '@hanzogui/text'
 import { useState } from 'react'
 import { useLocation } from 'react-router'
-import { COLUMN, CONTROL, INSET, ROW, line, plain, quiet, ring, surface } from '../parts/paint'
+import { COLUMN, CONTROL, INSET, ROW, line, plain, quiet, ring, sheet, surface } from '../parts/paint'
 import { useWalk } from '../parts/link'
 import { Account } from './account'
 import { Connect } from './connect'
@@ -19,15 +19,28 @@ export type Place = readonly [to: string, label: string]
  * appended rather than merged — the base's order is the base's to keep.
  */
 export const WHERE: readonly Place[] = [
-  ['/', 'Overview'],
   ['/proposals', 'Proposals'],
-  ['/delegate', 'Voting power'],
   ['/treasury', 'Treasury'],
   ['/work', 'Work'],
+]
+
+/**
+ * The rest, behind one control.
+ *
+ * Nine words across a header is a list, not a menu: a reader scans all of them
+ * to find the one they came for, and the row is the widest thing on the page.
+ * Three stand in the open — the three a person opens this interface to do —
+ * and the rest are one press away. Overview is not among either: the wordmark
+ * is the way home, as it is everywhere else, and a second control pointing at
+ * the same screen is a second answer to a settled question. Deployment is in
+ * the colophon with the other records screens.
+ */
+export const MORE: readonly Place[] = [
+  ['/', 'Overview'],
+  ['/delegate', 'Voting power'],
+  ['/stake', 'Vote escrow'],
   ['/roles', 'Roles'],
   ['/karma', 'Karma'],
-  ['/stake', 'Vote escrow'],
-  ['/deployment', 'Deployment'],
 ]
 
 function Where({ to, label, panel, done }: { to: string; label: string; panel?: boolean; done?: () => void }) {
@@ -84,10 +97,10 @@ function Chain() {
         borderRadius="$6"
         borderWidth={1}
         borderColor={line}
-        backgroundColor={surface}
+        backgroundColor={sheet}
       >
         <YStack gap="$1" minWidth={200}>
-          {chain.VENUES.map((v) => (
+          {chain.roster().map((v) => (
             <Button
               key={v.key}
               size="$2"
@@ -121,6 +134,7 @@ export function Nav({ more = [] }: { more?: readonly Place[] }) {
   const [menu, setMenu] = useState(false)
   const it = brand()
   const where = [...WHERE, ...more]
+  const rest = MORE
   return (
     <YStack
       render="header"
@@ -162,7 +176,7 @@ export function Nav({ more = [] }: { more?: readonly Place[] }) {
             <it.mark />
             {it.word}
           </SizableText>
-          <XStack gap="$4" display="none" $gtSm={{ display: 'flex' }} alignItems="center" flexWrap="wrap">
+          <XStack gap="$4" display="none" $gtSm={{ display: 'flex' }} alignItems="center">
             {where.map(([to, label]) => (
               <Where key={to} to={to} label={label} />
             ))}
@@ -187,8 +201,6 @@ export function Nav({ more = [] }: { more?: readonly Place[] }) {
                 borderWidth={1}
                 borderColor={line}
                 backgroundColor={surface}
-                display="flex"
-                $gtSm={{ display: 'none' }}
                 focusVisibleStyle={ring}
                 aria-label="Open the menu"
               >
@@ -202,10 +214,18 @@ export function Nav({ more = [] }: { more?: readonly Place[] }) {
               borderRadius="$6"
               borderWidth={1}
               borderColor={line}
-              backgroundColor={surface}
+              backgroundColor={sheet}
             >
+              {/* The three in the open are in here too below the fold, where
+                  the row that holds them is not drawn. Above it they would be
+                  a second copy of what is already on screen. */}
               <YStack gap="$1" minWidth={200}>
-                {where.map(([to, label]) => (
+                <YStack gap="$1" $gtSm={{ display: 'none' }}>
+                  {where.map(([to, label]) => (
+                    <Where key={to} to={to} label={label} panel done={() => setMenu(false)} />
+                  ))}
+                </YStack>
+                {rest.map(([to, label]) => (
                   <Where key={to} to={to} label={label} panel done={() => setMenu(false)} />
                 ))}
               </YStack>

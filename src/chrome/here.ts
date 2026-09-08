@@ -49,4 +49,24 @@ const watch = (l: () => void) => {
 
 export const here = (): Venue => (current ??= stored())
 export const use = (): Venue => useSyncExternalStore(watch, here, here)
+
+/**
+ * The chains this SITE reads, which is the tenant's own and no other.
+ *
+ * `VENUES` in `gov/chain.ts` is the registry: every chain this codebase knows
+ * how to read. It is not a menu. lux.vote is Lux's governance and shows Lux's
+ * chain, its figures and its mark; Zoo's chain belongs on zoo.vote, where Zoo's
+ * mark and Zoo's word are. A site that lists four brands tells a reader they
+ * are somewhere shared, and puts another network's addresses under this one's
+ * name — which is the failure the tenant/registry distinction exists to
+ * prevent, and it was on the deployment screen and in the header picker.
+ *
+ * The loopback chain rides with it under `pnpm dev` for the same reason it is
+ * in the registry: it is this tenant's chain on the machine reading it.
+ */
+export const roster = (): readonly Venue[] => {
+  const mine = home()
+  return VENUES.filter((v) => v.key === mine.key || v.key === 'local')
+}
+
 export { VENUES }

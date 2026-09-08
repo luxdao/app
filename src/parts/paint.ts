@@ -13,6 +13,20 @@ export const quiet = 'var(--color-text-secondary)'
 export const line = 'var(--color-border-divider)'
 export const surface = 'var(--color-bg-primary)'
 export const ground = 'var(--color-bg-body)'
+/**
+ * The third ink rung: a figure nobody entered, a control nobody can press, a
+ * sentence standing under a card. Named because it had no name, and everything
+ * that wanted it was drawn at `quiet` instead.
+ */
+export const faint = 'var(--color-text-faint)'
+
+/**
+ * A sheet: a card made opaque, for a panel that opens over the page. A card is
+ * the page's own ground inside a hairline, which is right until something has
+ * to stop the page being read through it.
+ */
+export const sheet = 'var(--color-bg-body)'
+
 export const link = 'var(--color-link-primary)'
 export const good = 'var(--color-status-good)'
 export const warn = 'var(--color-status-warn)'

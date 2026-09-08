@@ -1,5 +1,5 @@
 import type { Slot, Venue } from '../gov/chain'
-import { VENUES } from '../gov/chain'
+import { roster } from '../chrome/here'
 import { client, presence, reader } from '../gov/client'
 import { attempt, type Read } from '../gov/read'
 
@@ -65,7 +65,8 @@ export async function survey(v: Venue): Promise<Survey> {
   return { venue: v, chainId: reach.value.chainId, block: reach.value.block, reachable: true, why: null, slots }
 }
 
-export const surveyAll = (): Promise<Survey[]> => Promise.all(VENUES.map(survey))
+/** Every chain this site reads — the tenant's, not the registry's. */
+export const surveyAll = (): Promise<Survey[]> => Promise.all(roster().map(survey))
 
 /** One line per chain, for a heading that should not overstate. */
 export function verdict(s: Survey): string {

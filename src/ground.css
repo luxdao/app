@@ -11,6 +11,12 @@ body {
   color: var(--color-text-primary, #fafafa);
   font-family: 'Zen', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* The engine emits no weight class for an unstyled string, so every one of
+     them was inheriting the browser's 400 against a ladder that publishes 497.
+     Naming the token cannot fix that and neither can declaring it on a scope
+     the ladder out-specifies; font-weight inherits, so the document states it
+     once and every string that does not choose its own takes it. */
+  font-weight: var(--weight-normal);
 }
 
 /* A screen's own header at phone widths. A grid item's floor is its content, so
@@ -23,4 +29,109 @@ body {
     min-width: 0;
     max-width: 100%;
   }
+}
+
+/* The material.
+
+   Every name here was UNDEFINED before this block. `paint.ts` reads
+   `--color-text-primary`, `--color-border-divider` and seven more, and nothing
+   in the tree ever declared them: @hanzo/design publishes the type ramp and the
+   engine publishes its own knobs, but this ladder is the estate's, and the vote
+   had dropped the package that carries it. An undefined custom property in a
+   `border-color` is invalid at computed-value time, which is not "no border" —
+   it is `currentColor`. That is the whole of why every card and every pill on
+   this surface was outlined in pure white on near-black.
+
+   The rungs are measured on lux.exchange rather than chosen: ink at full, at
+   0.65 and at 0.38; a hairline at 0.10, which on black renders #1a1a1a; a card
+   that frames rather than fills, so what separates a surface from the page is
+   the line and the room around it and nothing else. The two state hues are the
+   estate's only permitted colour — no orange, no amber.
+
+   They are stated against one ink so a tenant that publishes another keeps its
+   own: lux.vote, zoo.vote and hanzo.vote are one bundle. When this ladder moves
+   into @luxfi/ui, this block goes with it. */
+:root,
+:root.light {
+  --color-text-primary: #000000;
+  --color-bg-body: #ffffff;
+  --color-link-primary: #000000;
+}
+
+:root.dark {
+  --color-text-primary: #ffffff;
+  --color-bg-body: #000000;
+  --color-link-primary: #ffffff;
+}
+
+:root,
+:root.light,
+:root.dark {
+  --color-text-secondary: color-mix(in srgb, var(--color-text-primary) 65%, transparent);
+  --color-text-faint: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
+  --color-border-divider: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  /* A card frames and does not fill. */
+  --color-bg-primary: transparent;
+  --color-status-good: #0c8410;
+  --color-status-warn: #b45309;
+  --color-status-bad: #b91c1c;
+}
+
+/* The ramp. @hanzo/design builds every size from one anchor and one spread:
+     --text-base = 0.875rem * --type-scale
+     --text-N    = (0.875rem +/- delta * --type-ratio) * --type-scale
+   At the shipped defaults the anchor is 14 and the rungs land on 11 13 14 15 17
+   21 26. The reference steps in twos from 12 and draws none of them at the
+   number: every rung it sets in rem renders at 0.962 of it. So 8/7 puts the
+   anchor on 16, 7/4 is the spread that carries the rung below to 14 and the one
+   above to 18, and the root is that fraction. */
+:root {
+  --type-root: 0.962;
+  --type-scale: calc(8 / 7 * var(--type-root));
+  --type-ratio: calc(7 / 4);
+
+  /* Three weights, not four. Every painted string on the reference is set at
+     497, 500 or 606: 497 for what is read, 500 for the small labels, 606 for
+     what is pressed or named. A face at 400 beside one at 497 is the whole
+     difference between a page that looks drawn and one that looks defaulted. */
+  --weight-normal: 497;
+  --weight-medium: 500;
+  --weight-semibold: 606;
+  --weight-bold: 606;
+}
+
+/* The engine's atomic classes read --f-weight-N, one rung per size rung, and
+   its font scope declares that whole ladder on itself: :root .font_body sets
+   rung 4 to 400 and :root .font_heading sets it to 600. A value on :root alone
+   cannot reach past either — which is why naming the weights above has no
+   effect until the ladder points at them. The doubled :root:root out-specifies
+   a two-class selector without an !important. */
+:root:root .font_body,
+:root:root .font_mono,
+:root:root .font_heading {
+  --f-weight-0: var(--weight-medium);
+  --f-weight-1: var(--weight-medium);
+  --f-weight-2: var(--weight-normal);
+  --f-weight-3: var(--weight-normal);
+  --f-weight-4: var(--weight-normal);
+  --f-weight-5: var(--weight-normal);
+  --f-weight-6: var(--weight-normal);
+  --f-weight-7: var(--weight-normal);
+  --f-weight-8: var(--weight-normal);
+  --f-weight-9: var(--weight-normal);
+  --f-weight-10: var(--weight-normal);
+  --f-weight-11: var(--weight-normal);
+  --f-weight-12: var(--weight-normal);
+}
+
+/* A raw <button> wears the browser's own 2px outset border, its own ground and
+   its own font. Six rows on a menu drew that border as a line between rows the
+   reference does not have. The reset the platform never gave it, once. */
+button {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
 }

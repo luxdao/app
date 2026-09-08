@@ -1,6 +1,5 @@
 import { YStack } from '@hanzogui/stacks'
 import { Paragraph } from '@hanzogui/text'
-import { VENUES } from '../gov/chain'
 import { useAsync } from '../gov/use'
 import { Address } from '../parts/address'
 import { Reading } from '../parts/answer'

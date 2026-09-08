@@ -36,7 +36,14 @@ import { type Venue, venue } from '../gov/chain'
 const HEIGHT = 20
 
 /**
- * The Lux mark: the letterforms L and X, at the published 43×17 viewBox.
+ * The Lux wordmark: the letterforms L, U and X, at the published 63×17 viewBox.
+ *
+ * The whole word, not the two-letter lockup. `LX` is lux.exchange's mark and
+ * lux.exchange's alone — a product's shorthand rather than the network's name —
+ * so a governance interface for the network wears the name the network is
+ * called. Same file, the U restored, taken verbatim from `@luxfi/logo`'s
+ * published `lux-wordmark-white.svg` and painted in `currentColor` so it moves
+ * with the theme rather than with the desktop.
  *
  * Twenty rather than the type size beside it. The letterforms are all caps and
  * the viewBox is their cap height exactly, so a mark set to the size of the
@@ -46,16 +53,16 @@ const HEIGHT = 20
 function Lux({ height = HEIGHT }: { height?: number }): ReactElement {
   return (
     <svg
-      viewBox="0 0 43 17"
+      viewBox="0 0 63 17"
       height={height}
-      width={(height * 43) / 17}
+      width={(height * 63) / 17}
       fill="currentColor"
       fillRule="nonzero"
       role="img"
       aria-label="Lux"
     >
       <polygon points="18 12.485 18 17 0 17 0 0 5.061 0 5.061 12.485" />
-      <path d="M18.7,0 L25.64,0 L30.841,5.265 L36.069,0 L42.991,0 L34.478,8.374 L43,16.748 L36.078,16.748 L30.85,11.483 L25.649,16.748 L18.7,16.748 L27.25,8.374 Z" />
+      <path d="M62.991,0 L56.069,0 L50.841,5.265 L45.64,0 L33.537,0 L33.537,8.355 C33.537,10.39 32.904,12.547 28.355,12.547 C23.805,12.547 23.173,10.418 23.173,8.355 L23.173,0 L18,0 L18,8.355 C18,14.199 21.107,17 28.364,17 C35.593,17 38.728,14.171 38.728,8.355 L38.728,0.327 C38.728,0.215 38.858,0.159 38.942,0.233 L47.25,8.374 L38.7,16.748 L45.649,16.748 L50.85,11.483 L56.078,16.748 L63,16.748 L54.478,8.374 L62.991,0 Z" />
     </svg>
   )
 }
