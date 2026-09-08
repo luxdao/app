@@ -135,6 +135,17 @@ export interface Brand {
    */
   readonly word: string
   readonly mark: (props: { height?: number }) => ReactElement
+  /**
+   * The mark in the browser's own chrome — a tab, a bookmark, a home screen.
+   *
+   * A field of the tenant and not a file in this repository, because a tab is
+   * the one surface where an estate's mark is not ours to choose: zoo.vote is
+   * Zoo's, and Lux's triangle in its tab would be Lux's brand on Zoo's site.
+   * Each estate serves its own from its own place; the marks below are the ones
+   * each publishes. `head` in main.tsx puts it on the document, beside the
+   * title, for the same reason the title is set there — one file, three hosts.
+   */
+  readonly icon: { readonly svg: string; readonly touch: string }
   /** The chain this site opens on. */
   readonly venue: Venue
   /**
@@ -169,9 +180,9 @@ function on(key: string): Venue {
 }
 
 export const BRANDS: readonly Brand[] = [
-  { key: 'lux', name: 'Lux', word: 'Vote', mark: Lux, venue: on('lux'), issuer: 'https://lux.id' },
-  { key: 'zoo', name: 'Zoo', word: 'Zoo Vote', mark: Zoo, venue: on('zoo'), issuer: 'https://zoolabs.id' },
-  { key: 'hanzo', name: 'Hanzo', word: 'Hanzo Vote', mark: Hanzo, venue: on('hanzo'), issuer: 'https://hanzo.id' },
+  { key: 'lux', name: 'Lux', word: 'Vote', mark: Lux, venue: on('lux'), icon: { svg: 'https://cdn.lux.cloud/brand/favicon.svg', touch: 'https://cdn.lux.cloud/brand/icon-180.png' }, issuer: 'https://lux.id' },
+  { key: 'zoo', name: 'Zoo', word: 'Zoo Vote', mark: Zoo, venue: on('zoo'), icon: { svg: 'https://zoo.ngo/favicon.svg', touch: 'https://zoo.ngo/icon-180.png' }, issuer: 'https://zoolabs.id' },
+  { key: 'hanzo', name: 'Hanzo', word: 'Hanzo Vote', mark: Hanzo, venue: on('hanzo'), icon: { svg: 'https://hanzo.ai/favicon.svg', touch: 'https://hanzo.ai/icon-180.png' }, issuer: 'https://hanzo.id' },
 ]
 
 /**

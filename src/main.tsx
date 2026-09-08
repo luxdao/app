@@ -64,7 +64,28 @@ function Surface() {
 
 // Which site this is. index.html carries "Vote" alone because it is served on
 // every host; the tenant is a fact about the host and is added here.
-document.title = `${brand().name} Vote`
+/**
+ * What the browser's own chrome shows: the tenant's name and the tenant's mark.
+ *
+ * Here rather than in index.html because one bundle serves three hosts, and the
+ * document is the same file on all of them. A mark written into the head would
+ * be Lux's triangle in Zoo's tab for as long as it took the bundle to parse —
+ * and would stay there on any host whose tenant this build did not guess.
+ */
+function head(): void {
+  const it = brand()
+  document.title = `${it.name} Vote`
+  for (const [rel, href, type] of [
+    ['icon', it.icon.svg, 'image/svg+xml'],
+    ['apple-touch-icon', it.icon.touch, undefined],
+  ] as const) {
+    const link = document.querySelector(`link[rel="${rel}"]`) ?? document.head.appendChild(Object.assign(document.createElement('link'), { rel }))
+    link.setAttribute('href', href)
+    if (type) link.setAttribute('type', type)
+  }
+}
+
+head()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
