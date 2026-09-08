@@ -42,7 +42,7 @@ jobs:
     # runner advertises (hanzoai/.github RUNNERS.md lists luxfi-linux-amd64,
     # lux-amd64, lux-build-linux-amd64 and lux-build-amd64), so a job asking for
     # it queues forever while looking like CI that has not got round to it.
-    runs-on: [lux-build-linux-amd64]
+    runs-on: [linux-amd64]
     strategy:
       # A registry refusing one org must not withhold the other two.
       fail-fast: false
