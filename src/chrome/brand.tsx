@@ -35,6 +35,24 @@ import { type Venue, venue } from '../gov/chain'
 /** How tall a mark stands in the header. */
 const HEIGHT = 20
 
+
+/**
+ * The Lux triangle: the estate's mark where there is room for a mark and not a
+ * word. The same drawing the browser tab wears, so the thing in the corner of a
+ * screen and the thing in the corner of a tab are one shape.
+ *
+ * Its own 100×100 box, and the path sits high in it — the published file
+ * carries a translate that centres the optical mass rather than the bounding
+ * box, and a triangle's centre of area is not its centre of ink.
+ */
+function Wedge({ height = HEIGHT }: { height?: number }): ReactElement {
+  return (
+    <svg viewBox="0 0 100 100" height={height} width={height} fill="currentColor" role="img" aria-label="Lux">
+      <path d="M50 85 L15 25 L85 25 Z" transform="translate(0 -5)" />
+    </svg>
+  )
+}
+
 /**
  * The Lux wordmark: the letterforms L, U and X, at the published 63×17 viewBox.
  *
@@ -136,6 +154,15 @@ export interface Brand {
   readonly word: string
   readonly mark: (props: { height?: number }) => ReactElement
   /**
+   * The same identity where there is room for a mark and not a word.
+   *
+   * Lux's `mark` is its name set in letterforms, so it needs a second drawing
+   * for a corner; Zoo's and Hanzo's are already glyphs and answer both
+   * questions with one file. The header reads the page's position and shows
+   * whichever fits.
+   */
+  readonly glyph: (props: { height?: number }) => ReactElement
+  /**
    * The mark in the browser's own chrome — a tab, a bookmark, a home screen.
    *
    * A field of the tenant and not a file in this repository, because a tab is
@@ -180,9 +207,9 @@ function on(key: string): Venue {
 }
 
 export const BRANDS: readonly Brand[] = [
-  { key: 'lux', name: 'Lux', word: 'Vote', mark: Lux, venue: on('lux'), icon: { svg: 'https://cdn.lux.cloud/brand/favicon.svg', touch: 'https://cdn.lux.cloud/brand/icon-180.png' }, issuer: 'https://lux.id' },
-  { key: 'zoo', name: 'Zoo', word: 'Zoo Vote', mark: Zoo, venue: on('zoo'), icon: { svg: 'https://zoo.ngo/favicon.svg', touch: 'https://zoo.ngo/icon-180.png' }, issuer: 'https://zoolabs.id' },
-  { key: 'hanzo', name: 'Hanzo', word: 'Hanzo Vote', mark: Hanzo, venue: on('hanzo'), icon: { svg: 'https://hanzo.ai/favicon.svg', touch: 'https://hanzo.ai/icon-180.png' }, issuer: 'https://hanzo.id' },
+  { key: 'lux', name: 'Lux', word: 'Vote', mark: Lux, glyph: Wedge, venue: on('lux'), icon: { svg: 'https://cdn.lux.cloud/brand/favicon.svg', touch: 'https://cdn.lux.cloud/brand/icon-180.png' }, issuer: 'https://lux.id' },
+  { key: 'zoo', name: 'Zoo', word: 'Zoo Vote', mark: Zoo, glyph: Zoo, venue: on('zoo'), icon: { svg: 'https://zoo.ngo/favicon.svg', touch: 'https://zoo.ngo/icon-180.png' }, issuer: 'https://zoolabs.id' },
+  { key: 'hanzo', name: 'Hanzo', word: 'Hanzo Vote', mark: Hanzo, glyph: Hanzo, venue: on('hanzo'), icon: { svg: 'https://hanzo.ai/favicon.svg', touch: 'https://hanzo.ai/icon-180.png' }, issuer: 'https://hanzo.id' },
 ]
 
 /**

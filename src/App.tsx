@@ -3,6 +3,7 @@ import { Heading, Paragraph, SizableText } from '@hanzogui/text'
 import { Component, Fragment, Suspense, lazy, type ReactNode } from 'react'
 import { Route, Routes } from 'react-router'
 import { Nav, type Place } from './chrome/nav'
+import { Help } from './chrome/help'
 import * as chain from './chrome/here'
 import { COLUMN, INSET, line, plain, quiet } from './parts/paint'
 import { Link } from './parts/link'
@@ -106,6 +107,7 @@ export default function App({ more, places }: { more?: ReactNode; places?: reado
   return (
     <YStack minHeight="100vh" backgroundColor="var(--color-bg-body)">
       <Nav more={places} />
+      <Help />
       {/* Keyed on the chain, so changing it discards every in-flight read
           rather than letting one land against the wrong chain's screen. */}
       <Fragment key={here.key}>
@@ -159,9 +161,7 @@ export default function App({ more, places }: { more?: ReactNode; places?: reado
         minWidth={0}
       >
         <Paragraph size="$2" margin={0} color={quiet} maxWidth={620}>
-          Every figure on these screens is read from {here.name} at {here.id} when the screen opens.
-          Nothing is cached, seeded or illustrative. You sign every transaction in your own wallet.
-        </Paragraph>
+          You sign every transaction in your own wallet.</Paragraph>
         <Paragraph size="$2" margin={0} color={quiet}>
           <Link href="/deployment">What is deployed</Link> · <Link href="/gauges">Gauges</Link> ·{' '}
           <Link href="/settings">Settings</Link>

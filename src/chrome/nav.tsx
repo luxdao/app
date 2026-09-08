@@ -19,6 +19,7 @@ export type Place = readonly [to: string, label: string]
  * appended rather than merged — the base's order is the base's to keep.
  */
 export const WHERE: readonly Place[] = [
+  ['/', 'Dashboard'],
   ['/proposals', 'Proposals'],
   ['/treasury', 'Treasury'],
   ['/work', 'Work'],
@@ -36,7 +37,6 @@ export const WHERE: readonly Place[] = [
  * the colophon with the other records screens.
  */
 export const MORE: readonly Place[] = [
-  ['/', 'Overview'],
   ['/delegate', 'Voting power'],
   ['/stake', 'Vote escrow'],
   ['/roles', 'Roles'],
@@ -130,18 +130,28 @@ function Chain() {
   )
 }
 
+/**
+ * The header: a lockup that is also the way in, and who you are.
+ *
+ * The mark is the estate's glyph and not its wordmark. A wordmark is for a
+ * marketing surface, where the name is the message; inside an app the corner
+ * is a place you press, and a triangle at sixteen pixels is legible where five
+ * letterforms are not. It is drawn as a disclosure — it turns when the menu is
+ * open — because it IS the disclosure: nine words strung across a header is a
+ * list a reader scans, and one press that opens all of them is a menu they
+ * read once.
+ */
 export function Nav({ more = [] }: { more?: readonly Place[] }) {
   const [menu, setMenu] = useState(false)
   const it = brand()
-  const where = [...WHERE, ...more]
-  const rest = MORE
+  const where = [...WHERE, ...more, ...MORE]
   return (
     <YStack
       render="header"
       width="100%"
       borderBottomWidth={1}
       borderBottomColor={line}
-      backgroundColor={surface}
+      backgroundColor="transparent"
     >
       <XStack
         width="100%"
@@ -154,83 +164,65 @@ export function Nav({ more = [] }: { more?: readonly Place[] }) {
         gap="$3"
         minWidth={0}
       >
-        <XStack alignItems="center" gap="$4" flexShrink={1} minWidth={0}>
-          <SizableText
-            render={<a href="/" onClick={useWalk()('/')} />}
-            display="inline-flex"
-            alignItems="center"
-            minHeight={CONTROL}
-            size="$5"
-            fontWeight="600"
-            color={plain}
-            whiteSpace="nowrap"
-            flexShrink={0}
-            gap="$2"
-            aria-label={`${it.name} Vote`}
+        <Popover open={menu} onOpenChange={setMenu}>
+          <PopoverTrigger asChild>
+            <Button
+              unstyled
+              flexDirection="row"
+              alignItems="center"
+              gap="$2"
+              minHeight={CONTROL}
+              paddingHorizontal={0}
+              backgroundColor="transparent"
+              cursor="pointer"
+              focusVisibleStyle={ring}
+              aria-label={`${it.name} Vote. Open the menu`}
+              aria-haspopup="menu"
+              aria-expanded={menu}
+            >
+              {/* The glyph turns a half-turn when the menu opens, which is what
+                  says it was the disclosure rather than a logo that happened to
+                  be pressable. A reader who has asked for less motion is shown
+                  the same two positions without the turn between them. */}
+              <YStack
+                style={{
+                  color: plain,
+                  transform: menu ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 160ms ease',
+                }}
+              >
+                <it.glyph height={16} />
+              </YStack>
+              <SizableText size="$4" fontWeight="var(--weight-semibold)" color={plain} whiteSpace="nowrap">
+                {it.name}
+              </SizableText>
+              <SizableText size="$4" color={quiet} whiteSpace="nowrap">
+                {it.word}
+              </SizableText>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            padding="$2"
+            borderRadius="$6"
+            borderWidth={1}
+            borderColor={line}
+            backgroundColor={sheet}
           >
-            {/* The tenant's own mark and the word the mark does not already
-                say. Drawn, not fetched — an <img> lands after a round trip and
-                shifts the row it sits in, on the first thing a person looks at.
-                It takes currentColor, so it moves with the theme rather than
-                with the desktop. */}
-            <it.mark />
-            {it.word}
-          </SizableText>
-          <XStack gap="$4" display="none" $gtSm={{ display: 'flex' }} alignItems="center">
-            {where.map(([to, label]) => (
-              <Where key={to} to={to} label={label} />
-            ))}
-          </XStack>
-        </XStack>
+            <YStack gap="$1" minWidth={220} role="menu">
+              {where.map(([to, label]) => (
+                <Where key={to} to={to} label={label} panel done={() => setMenu(false)} />
+              ))}
+            </YStack>
+          </PopoverContent>
+        </Popover>
 
-        {/* The chain being read, then the key that can act on it, then the
-            account that says who is reading. Three separate authorities in the
-            order they matter to a reader, and none of them a gate in front of
-            the other two. */}
+        {/* The chain being read, then the one control that says who is reading.
+            Connecting a wallet IS signing in — it names an address and proves
+            the key — so there is one door and not two beside each other. */}
         <XStack alignItems="center" gap="$2" flexShrink={0}>
           <Chain />
           <Connect />
           <Account />
-          <Popover open={menu} onOpenChange={setMenu}>
-            <PopoverTrigger asChild>
-              <Button
-                size="$2"
-                minHeight={CONTROL}
-                paddingHorizontal="$3"
-                borderRadius="$12"
-                borderWidth={1}
-                borderColor={line}
-                backgroundColor={surface}
-                focusVisibleStyle={ring}
-                aria-label="Open the menu"
-              >
-                <SizableText size="$3" color={plain}>
-                  Menu
-                </SizableText>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              padding="$2"
-              borderRadius="$6"
-              borderWidth={1}
-              borderColor={line}
-              backgroundColor={sheet}
-            >
-              {/* The three in the open are in here too below the fold, where
-                  the row that holds them is not drawn. Above it they would be
-                  a second copy of what is already on screen. */}
-              <YStack gap="$1" minWidth={200}>
-                <YStack gap="$1" $gtSm={{ display: 'none' }}>
-                  {where.map(([to, label]) => (
-                    <Where key={to} to={to} label={label} panel done={() => setMenu(false)} />
-                  ))}
-                </YStack>
-                {rest.map(([to, label]) => (
-                  <Where key={to} to={to} label={label} panel done={() => setMenu(false)} />
-                ))}
-              </YStack>
-            </PopoverContent>
-          </Popover>
         </XStack>
       </XStack>
     </YStack>

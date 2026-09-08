@@ -4,9 +4,12 @@ import {
 } from '@hanzogui/dialog'
 import { XStack, YStack } from '@hanzogui/stacks'
 import { Paragraph, SizableText } from '@hanzogui/text'
+import { useIam } from '@hanzo/iam/react'
 import { useEffect, useState } from 'react'
 import { CONTROL, REACH, ROW, bad, line, plain, quiet, ring, surface } from '../parts/paint'
 import { short } from '../parts/address'
+import { brand } from './brand'
+import * as id from './id'
 import * as wallet from './wallet'
 
 /**
@@ -18,6 +21,8 @@ import * as wallet from './wallet'
  * connect button is never a gate in front of the page.
  */
 export function Connect() {
+  const { isAuthenticated, sdk } = useIam()
+  const at = brand()
   const session = wallet.use()
   const [open, setOpen] = useState(false)
   const [found, setFound] = useState<wallet.Injected[] | null>(null)
@@ -107,7 +112,7 @@ export function Connect() {
         onPress={() => setOpen(true)}
       >
         <SizableText size="$3" color={plain}>
-          Connect
+          Sign in
         </SizableText>
       </Button>
 
@@ -129,11 +134,10 @@ export function Connect() {
         >
           <YStack gap="$1">
             <DialogTitle size="$6" margin={0} color={plain}>
-              Connect a wallet
+              Sign in
             </DialogTitle>
             <DialogDescription size="$3" margin={0} color={quiet}>
-              Reading needs no wallet. One is needed to delegate, propose or cast a vote — and every
-              transaction is signed in your own wallet.
+              Reading needs neither. One is needed to delegate, propose or cast a vote.
             </DialogDescription>
           </YStack>
 
@@ -173,6 +177,29 @@ export function Connect() {
             </YStack>
           )}
 
+          {/* The other way in, in the same panel rather than beside it: a
+              wallet proves a key and an issuer vouches for a person, and both
+              answer the one question this control asks. */}
+          {isAuthenticated ? null : (
+            <Button
+              size="$3"
+              minHeight={ROW}
+              justifyContent="flex-start"
+              paddingHorizontal="$3"
+              borderRadius="$6"
+              borderWidth={1}
+              borderColor={line}
+              backgroundColor="transparent"
+              hoverStyle={{ borderColor: plain }}
+              focusVisibleStyle={ring}
+              aria-label={`Sign in with ${id.host(at.issuer)}`}
+              onPress={() => void id.start(sdk).catch((e) => setWhy(e instanceof Error ? e.message : String(e)))}
+            >
+              <SizableText size="$4" color={plain}>
+                Continue with {id.host(at.issuer)}
+              </SizableText>
+            </Button>
+          )}
           {why ? (
             <Paragraph size="$3" margin={0} color={bad}>
               {why}

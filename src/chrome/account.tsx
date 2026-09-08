@@ -72,31 +72,11 @@ export function Account() {
   // which is the one thing this control must never say by accident.
   if (isLoading) return null
 
-  if (!isAuthenticated) {
-    return (
-      <Button
-        size="$2"
-        minHeight={CONTROL}
-        paddingHorizontal="$3"
-        borderRadius="$12"
-        borderWidth={1}
-        borderColor={line}
-        backgroundColor={surface}
-        flexShrink={0}
-        hoverStyle={{ borderColor: plain, backgroundColor: surface }}
-        focusVisibleStyle={ring}
-        // Where the credential is going, said before it is typed. A person
-        // handing over a password is entitled to know whose login page it is,
-        // and on this bundle that answer is three different hosts.
-        aria-label={`Sign in with ${id.host(at.issuer)}`}
-        onPress={() => void id.start(sdk).catch((e) => setWhy(e instanceof Error ? e.message : String(e)))}
-      >
-        <SizableText size="$3" color={why ? bad : plain}>
-          {why ? 'Sign-in unavailable' : 'Sign in'}
-        </SizableText>
-      </Button>
-    )
-  }
+  // Signed out, this control draws nothing: connecting a wallet IS signing in —
+  // it names an address and proves the key — so the two doors that stood beside
+  // each other are one, and `chrome/connect.tsx` is it. This is what a session
+  // looks like once there is one.
+  if (!isAuthenticated) return null
 
   const called = me.name ?? (me.subject ? short(me.subject) : 'this account')
 

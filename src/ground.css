@@ -135,3 +135,17 @@ button {
   font: inherit;
   color: inherit;
 }
+
+/* A reader who has asked for less motion is shown the two positions and not the
+   turn between them. Stated once, on everything, rather than remembered at each
+   place something moves. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
