@@ -33,9 +33,7 @@ export default function Overview() {
 
   return (
     <YStack gap="$6">
-      <Title lede={`Governance on ${here.name}, read from the chain at ${here.id} when this screen opened.`}>
-        {here.name} governance
-      </Title>
+      <Title>Dashboard</Title>
 
       <Reading of={gov} what="the Governor">
         {(m) => (
@@ -128,15 +126,11 @@ export default function Overview() {
         )}
       </Reading>
 
-      <Panel
-        title="What else is on this chain"
-        note="Every row is measured when the screen opens, never carried in the build."
-      >
-        <Paragraph size="$3" margin={0} color={quiet}>
-          <Link href="/deployment">The deployment survey</Link> asks each chain for the code at every
-          address on record, and shows where the records and the chain disagree.
-        </Paragraph>
-      </Panel>
+      {/* Where the rest of it is, as a link and not a paragraph about a link. */}
+      <Paragraph size="$3" margin={0} color={quiet}>
+        <Link href="/deployment">Smart contracts</Link> lists every address on record and what the
+        chain answers for it.
+      </Paragraph>
     </YStack>
   )
 }

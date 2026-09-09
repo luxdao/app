@@ -25,15 +25,10 @@ export default function Deployment() {
 
   return (
     <YStack gap="$6">
-      <Title lede="Every address on record, asked of its own chain when this screen opened. Nothing here is carried in the build.">
+      <Title lede="Every address on record, asked of the chain when this screen opened.">
         Smart contracts
       </Title>
 
-      <Paragraph size="$3" margin={0} color={quiet} maxWidth={720}>
-        A contract with no code answers a call with empty data rather than an error, so an interface
-        that does not ask this question cannot tell an absent contract from an idle one. Zero bytes
-        below is a measurement, not a missing value.
-      </Paragraph>
 
       <Reading of={all} what="the chains">
         {(rows) => (

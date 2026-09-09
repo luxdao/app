@@ -2,6 +2,7 @@ import { YStack } from '@hanzogui/stacks'
 import { Paragraph, SizableText } from '@hanzogui/text'
 import type { ReactNode } from 'react'
 import type { Read } from '../gov/read'
+import { Fold } from './fold'
 import { CORNER, bad, line, plain, quiet, surface } from './paint'
 
 /**
@@ -71,13 +72,7 @@ export function Reading<T>({
   if (of.at === 'unrecorded') {
     return (
       <Answer
-        title={`No address is recorded for ${what} on this chain`}
-        detail={
-          <>
-            This is a statement about our own records rather than about the chain: nothing here has
-            been asked of it, so nothing is known about whether such a contract exists.
-          </>
-        }
+        title={`No address on record for ${what}`}
       />
     )
   }
@@ -85,14 +80,8 @@ export function Reading<T>({
   if (of.at === 'absent') {
     return (
       <Answer
-        title={`${up(what)} is not deployed on this chain`}
-        detail={
-          <>
-            The address on record — <Mono>{of.address}</Mono> — answers <Mono>eth_getCode</Mono> with
-            no code, so there is nothing there to be empty. This is not an empty register; it is the
-            absence of the contract that would keep one.
-          </>
-        }
+        title={`${up(what)} is not deployed`}
+        detail={<Mono>{of.address}</Mono>}
       />
     )
   }
@@ -110,22 +99,23 @@ export function Reading<T>({
         <SizableText size="$4" color={plain}>
           {up(what)} could not be read
         </SizableText>
-        <Paragraph size="$3" margin={0} color={quiet}>
-          The chain was asked and did not answer, so this screen knows nothing either way. A refusal
-          is not an empty result.
-        </Paragraph>
+        {/* The client's own words, folded away. A reader wants to know the read
+            failed; whoever is fixing it wants the request. One screen, two
+            readers, and only one of them arrived for a stack trace. */}
+        <Fold say="Details">
         <SizableText
-          render="pre"
-          display="block"
-          margin={0}
-          size="$2"
-          color={quiet}
-          fontFamily="$mono"
-          whiteSpace="pre-wrap"
-          wordWrap="break-word"
-        >
-          {of.why}
-        </SizableText>
+            render="pre"
+            display="block"
+            margin={0}
+            size="$2"
+            color={quiet}
+            fontFamily="$mono"
+            whiteSpace="pre-wrap"
+            wordWrap="break-word"
+          >
+            {of.why}
+          </SizableText>
+        </Fold>
       </YStack>
     )
   }

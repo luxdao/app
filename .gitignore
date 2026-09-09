@@ -5,3 +5,8 @@ test-results/
 playwright-report/
 *.local
 .DS_Store
+
+# The reference capture. app-v1 is AGPL-3.0 and this repository is not: what it
+# draws is read to know what a screen must hold, and nothing of it is kept here
+# — not a string, not a screenshot, not a route table.
+bin/reference/

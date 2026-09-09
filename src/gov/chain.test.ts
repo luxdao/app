@@ -23,13 +23,16 @@ describe('the chain registry', () => {
    * Governor was fine.
    */
   it('reaches every chain by the path form, which is the one a browser may read', () => {
-    // Either segment. What this guards is the path form against the bare host,
-    // which is the difference between a readable response and a CORS refusal;
-    // whether the segment says `bc` or `chain` is a fact about which luxd the
-    // validators are running, and pinning it here means this fails on a
-    // deployment move rather than on the mistake it exists to catch.
+    // The segment is `chain`. `bc` was the older spelling of the same thing and
+    // is gone from every validator, so a build still asking for it reaches
+    // nothing — this is where that would be caught. The chain letter is either
+    // case: luxd aliases both, and the estate writes it either way.
+    //
+    // What the rest of the pattern guards is the path form against the bare
+    // host, which is the difference between a readable response and a CORS
+    // refusal.
     for (const v of shipped)
-      expect(v.rpc).toMatch(/^https:\/\/api\.[a-z-]+\.network\/v1\/(?:bc|chain)\/C\/rpc$/)
+      expect(v.rpc).toMatch(/^https:\/\/api\.[a-z-]+\.network\/v1\/chain\/[Cc]\/rpc$/)
   })
 
   it('finds a chain by key and reports nothing for one it does not have', () => {
