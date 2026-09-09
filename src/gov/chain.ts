@@ -15,21 +15,20 @@ import { getChain } from '@luxwallet/chains'
  *
  * The segment is `chain`, which is the estate's declared form: `luxfi/universe`
  * records `rpcPath: /v1/chain/C/rpc`, the exchange asks it, and the gateway in
- * front of the nodes is what answers it. `luxd` itself registers one route
- * prefix from constants.ChainAliasPrefix — older builds spell it `bc`, newer
- * ones `chain` — and the mainnet node measured today answers `bc` and 404s
- * `chain`, so the gateway carries the translation until the nodes move. The
- * paths here are the estate's, not a node's; a build pinned to a node's own
- * spelling breaks the day the node is recycled.
+ * front of the nodes answers it. `luxd` registers one route prefix from
+ * constants.ChainAliasPrefix — older builds spell it `bc`, newer ones `chain`.
+ * The mainnet validators now run node v1.36.181 and serve `chain` themselves;
+ * `/v1/bc/C/rpc` is a 404 on every one of them, so no translation is left
+ * anywhere in the path. The paths here are the estate's, not a node's — a build
+ * pinned to a node's own spelling breaks the day the node is recycled, which is
+ * what just happened to `bc`.
  *
- * Every endpoint is the path form and not the bare host, because only
- * the path form answers a browser. `https://api.lux.network` serves the same
- * chain and the same results to curl, but it sits behind a gateway that refuses
- * the CORS preflight with 405 and sends no `access-control-allow-origin`, so a
- * browser never sees the response. That failure arrives as a network error with
- * no chain in it — every screen would report the Governor unreadable while the
- * Governor was fine — which is why the path is recorded here rather than left
- * to whoever writes the next endpoint.
+ * Every endpoint is the path form and not the bare host. Both answer a browser
+ * today: `https://api.lux.network/` serves this chain and returns 204 with
+ * `access-control-allow-origin: *` on the preflight, as the path form does. The
+ * difference is what they name. The path names the chain it reads; the root
+ * means whatever the gateway last mapped it to, so re-pointing the root moves
+ * every screen here onto another chain without changing a line of this file.
  */
 
 export type Slot =
@@ -75,10 +74,17 @@ export const VENUES: readonly Venue[] = [
     ...lux,
     rpc: 'https://api.lux.network/v1/chain/c/rpc',
     explorer: 'https://explore.lux.network',
-    // From deployments/gov-vote/96369.json. This is the set the chain answers
-    // for; the set in the retired app's `luxDevnet` block belongs to 96370 and
-    // is empty here, which is how a devnet address came to be advertised as
-    // mainnet governance.
+    // From deployments/gov-vote/96369.json, and every one of these eight now
+    // answers with code — the set in the retired app's `luxDevnet` block
+    // belongs to 96370 and is empty here, which is how a devnet address came to
+    // be advertised as mainnet governance.
+    //
+    // They are a contiguous CREATE run by 0x9011E888…4714 at nonces 764–772, in
+    // the order `script/deploy_gov_vote.sh` deploys them. That is why the
+    // re-genesised chain carries the same addresses the records already named:
+    // CREATE depends only on deployer and nonce, so the run was replayed onto
+    // the fresh chain rather than the records rewritten to follow it. Deploying
+    // these in any other order moves all eight.
     at: {
       governor: '0x976520c30903F0744814D149574f9C0D9BaA1431',
       timelock: '0x62617aB01F263ce2b8432065b6d1d8D031665c74',
@@ -88,12 +94,15 @@ export const VENUES: readonly Venue[] = [
       vlux: '0x9aAB909D3e673CCBCfEacF96F96585B8e75bf1D9',
       votingLux: '0x160cD157d1f3A178d74962c28D71AdADb7AEDFcd',
       gauges: '0x7F17E6430A6ea24AF5472e89Fc86e93C4F57073b',
-      // 0xDA215aab35CD29097B0d454042f676F1dA02497F stood here and is zero bytes
-      // on 96369. This one answers: Safe 1.5.0, threshold 1, sole owner
-      // 0x9011e888251ab053b7bd1cdb598db4f9ded94714 — the same owner Hanzo's
-      // Safe carries. Checked with eth_getCode and getOwners, which is the only
-      // thing that settles an address here; a plausible-looking one that holds
-      // no code reads on the Treasury screen as a real holding of zero.
+      // Zero bytes, and recorded so the screens can say so. This address did
+      // answer as Safe 1.5.0 — threshold 1, sole owner
+      // 0x9011e888251ab053b7bd1cdb598db4f9ded94714 — before 96369 was
+      // re-genesised. The chain now begins at a genesis that funds that owner
+      // and deploys nothing, so no Safe exists at any address on it, and
+      // `luxfi/standard` deployments/safe/96369.json says the same in its own
+      // words: status `pending-deploy`. Dropping the address would not make the
+      // screens truer, it would make them say no address is on record — which
+      // is a different fact, and not this one.
       safe: '0x4CB86Cbb76Ed31E68825F9e24480EEdF5B9b1951',
     },
   },
