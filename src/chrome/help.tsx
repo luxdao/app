@@ -55,10 +55,12 @@ export function Help() {
         backgroundColor="transparent"
         cursor="pointer"
         focusVisibleStyle={ring}
-        // From the laptop width up: below it the reading column runs to both
-        // edges and a mark in the corner is a mark on the text.
+        // From the laptop width up. Below it the reading column runs to both
+        // edges of the glass and there is no gutter for a mark to stand in, so
+        // a mark in the corner is a mark on the text. Measured at 390: it was
+        // drawn, over the words. `$gtSm` starts below a phone.
         display="none"
-        $gtSm={{ display: 'flex' }}
+        $gtLg={{ display: 'flex' }}
       >
         <svg width={MARK} height={MARK} viewBox="0 0 24 24" fill="none"
           stroke={plain} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" role="img"
