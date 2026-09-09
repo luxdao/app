@@ -23,9 +23,6 @@ importers:
       '@hanzo/iam':
         specifier: ^0.21.18
         version: 0.21.18(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@hanzo/tokens':
-        specifier: ^1.0.2
-        version: 1.0.2
       '@hanzo/ui':
         specifier: ^8.27.7
         version: 8.27.7(t3g6uzosagshfrirzlhc55kz7u)
@@ -568,9 +565,6 @@ packages:
         optional: true
       react:
         optional: true
-
-  '@hanzo/tokens@1.0.2':
-    resolution: {integrity: sha512-e4Oz4f+6uSPJKqVrHEpyF4t78sI3hhZzD9mgwuxItS2xaKHFkFk8IHbWAcb91oel4Wdh2uPd7sTU3QawH6lRSA==}
 
   '@hanzo/ui@8.27.7':
     resolution: {integrity: sha512-Kyk9YoCzjX0O39h8+ZahbFGZv4Lqr0iJRvN0UlUWoeY+Y8CPcEhvKB00LUcjs8mXA5yEFgrL74dZx3aFsEQ9AQ==}
@@ -3657,8 +3651,6 @@ snapshots:
     optionalDependencies:
       '@hanzogui/lucide-icons-2': 8.3.1(react-dom@19.2.8(react@19.2.8))(react-native-svg@15.15.5(react-native@0.87.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.2.8)(react@19.2.8))(react@19.2.8))(react@19.2.8)
       react: 19.2.8
-
-  '@hanzo/tokens@1.0.2': {}
 
   '@hanzo/ui@8.27.7(t3g6uzosagshfrirzlhc55kz7u)':
     dependencies:
