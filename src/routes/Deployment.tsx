@@ -26,7 +26,7 @@ export default function Deployment() {
   return (
     <YStack gap="$6">
       <Title lede="Every address on record, asked of its own chain when this screen opened. Nothing here is carried in the build.">
-        What is deployed
+        Smart contracts
       </Title>
 
       <Paragraph size="$3" margin={0} color={quiet} maxWidth={720}>

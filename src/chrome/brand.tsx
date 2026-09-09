@@ -144,12 +144,15 @@ export interface Brand {
   /** What the DAO is called. */
   readonly name: string
   /**
-   * The typeset half of the lockup: what the mark does not already say.
+   * The typeset half of the lockup, and the whole of what it says.
    *
-   * The Lux mark IS the word — it is the letters L and X — so beside it only
-   * "Vote" is left to write. The Zoo and Hanzo marks are glyphs and say nothing,
-   * so they carry the name. One rule, three answers, no lockup that reads
-   * "Lux Lux Vote".
+   * The glyph beside it is a shape and says nothing, so this carries the name
+   * and the app both: "Lux Vote". One field rather than a name and a word set
+   * side by side, because two fields is how a lockup ends up reading "Zoo Zoo
+   * Vote" the day a tenant's name is already in its word.
+   *
+   * The header collapses it to its last word as the page scrolls, so this reads
+   * from the general to the particular: the estate, then the app.
    */
   readonly word: string
   readonly mark: (props: { height?: number }) => ReactElement
@@ -207,7 +210,7 @@ function on(key: string): Venue {
 }
 
 export const BRANDS: readonly Brand[] = [
-  { key: 'lux', name: 'Lux', word: 'Vote', mark: Lux, glyph: Wedge, venue: on('lux'), icon: { svg: 'https://cdn.lux.cloud/brand/favicon.svg', touch: 'https://cdn.lux.cloud/brand/icon-180.png' }, issuer: 'https://lux.id' },
+  { key: 'lux', name: 'Lux', word: 'Lux Vote', mark: Lux, glyph: Wedge, venue: on('lux'), icon: { svg: 'https://cdn.lux.cloud/brand/favicon.svg', touch: 'https://cdn.lux.cloud/brand/icon-180.png' }, issuer: 'https://lux.id' },
   { key: 'zoo', name: 'Zoo', word: 'Zoo Vote', mark: Zoo, glyph: Zoo, venue: on('zoo'), icon: { svg: 'https://zoo.ngo/favicon.svg', touch: 'https://zoo.ngo/icon-180.png' }, issuer: 'https://zoolabs.id' },
   { key: 'hanzo', name: 'Hanzo', word: 'Hanzo Vote', mark: Hanzo, glyph: Hanzo, venue: on('hanzo'), icon: { svg: 'https://hanzo.ai/favicon.svg', touch: 'https://hanzo.ai/icon-180.png' }, issuer: 'https://hanzo.id' },
 ]

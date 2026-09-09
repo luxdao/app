@@ -3,7 +3,7 @@ import { brand } from './brand'
 import { Popover, PopoverContent, PopoverTrigger } from '@hanzogui/popover'
 import { XStack, YStack } from '@hanzogui/stacks'
 import { SizableText } from '@hanzogui/text'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { COLUMN, CONTROL, INSET, ROW, line, plain, quiet, ring, sheet, surface } from '../parts/paint'
 import { useWalk } from '../parts/link'
@@ -141,9 +141,30 @@ function Chain() {
  * list a reader scans, and one press that opens all of them is a menu they
  * read once.
  */
+/**
+ * Whether the page has been moved off its first line.
+ *
+ * One boolean and one listener for the whole header, passive so it never holds
+ * a scroll, and read once on mount because a reload restores a position.
+ */
+function useDeep(after = 24): boolean {
+  const [deep, setDeep] = useState(false)
+  useEffect(() => {
+    const read = () => setDeep(window.scrollY > after)
+    read()
+    window.addEventListener('scroll', read, { passive: true })
+    return () => window.removeEventListener('scroll', read)
+  }, [after])
+  return deep
+}
+
 export function Nav({ more = [] }: { more?: readonly Place[] }) {
   const [menu, setMenu] = useState(false)
+  const deep = useDeep()
   const it = brand()
+  const said = it.word.split(' ')
+  const tail = said[said.length - 1]
+  const lead = said.slice(0, -1).join(' ')
   const where = [...WHERE, ...more, ...MORE]
   return (
     <YStack
@@ -193,11 +214,28 @@ export function Nav({ more = [] }: { more?: readonly Place[] }) {
               >
                 <it.glyph height={16} />
               </YStack>
-              <SizableText size="$4" fontWeight="var(--weight-semibold)" color={plain} whiteSpace="nowrap">
-                {it.name}
+              {/* The lockup reads from the general to the particular and loses
+                  the general half as the page moves: "Lux Vote" at rest, "Vote"
+                  once a reader is inside a screen, where the glyph beside it is
+                  already saying which estate they are in. The room it takes
+                  goes with it, so the trailing word slides left rather than the
+                  first fading in place and leaving a hole. */}
+              <SizableText
+                size="$4"
+                fontWeight="var(--weight-semibold)"
+                color={plain}
+                whiteSpace="nowrap"
+                style={{
+                  maxWidth: deep ? 0 : '8rem',
+                  opacity: deep ? 0 : 1,
+                  overflow: 'hidden',
+                  transition: 'max-width 200ms ease, opacity 160ms ease',
+                }}
+              >
+                {lead}
               </SizableText>
-              <SizableText size="$4" color={quiet} whiteSpace="nowrap">
-                {it.word}
+              <SizableText size="$4" fontWeight="var(--weight-semibold)" color={plain} whiteSpace="nowrap">
+                {tail}
               </SizableText>
             </Button>
           </PopoverTrigger>

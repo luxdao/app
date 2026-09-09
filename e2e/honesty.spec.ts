@@ -32,20 +32,23 @@ test.describe('no screen carries a figure nobody measured', () => {
   }
 })
 
-test('an absent contract is reported as absent, never as an empty list', async ({ page }) => {
-  // Pars carries a work-market address on record and has no code at it. The
-  // board must say the market is not deployed rather than draw an empty table,
-  // which would read as a market with no tasks yet.
+test('the picker offers this site\'s own chain and no other estate\'s', async ({ page }) => {
+  // One site is one tenant. The registry in gov/chain.ts knows four chains;
+  // this site reads its own. A picker listing Zoo, Pars and Hanzo on lux.vote
+  // told a reader they were somewhere shared and put another network's
+  // addresses under this one's mark — which is what `roster()` ended.
   await page.goto('/work')
   await ready(page)
   await page.getByRole('button', { name: /Chain:/ }).click()
-  await page.getByRole('button', { name: /^Pars/ }).click()
-  await expect(page.getByText(/is not deployed on this chain/i).first()).toBeVisible({ timeout: 30_000 })
+  for (const other of [/^Zoo/, /^Pars/, /^Hanzo/]) {
+    await expect(page.getByRole('button', { name: other })).toHaveCount(0)
+  }
+  await expect(page.getByRole('button', { name: /^Lux C-Chain · 96369/ })).toBeVisible()
 })
 
 test('the deployment survey distinguishes all four readings', async ({ page }) => {
   await page.goto('/deployment')
-  await expect(page.getByRole('heading', { level: 1, name: 'What is deployed' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Smart contracts' })).toBeVisible()
   // Every reading is a measurement performed on load; each of the four has to
   // be reachable or the distinction is decorative.
   await expect(page.getByText('deployed', { exact: true }).first()).toBeVisible({ timeout: 45_000 })

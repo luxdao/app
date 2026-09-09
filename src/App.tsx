@@ -163,7 +163,7 @@ export default function App({ more, places }: { more?: ReactNode; places?: reado
         <Paragraph size="$2" margin={0} color={quiet} maxWidth={620}>
           You sign every transaction in your own wallet.</Paragraph>
         <Paragraph size="$2" margin={0} color={quiet}>
-          <Link href="/deployment">What is deployed</Link> · <Link href="/gauges">Gauges</Link> ·{' '}
+          <Link href="/deployment">Smart contracts</Link> · <Link href="/gauges">Gauges</Link> ·{' '}
           <Link href="/settings">Settings</Link>
         </Paragraph>
       </YStack>

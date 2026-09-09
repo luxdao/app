@@ -23,8 +23,21 @@ describe('the tenants this bundle serves', () => {
    * up the difference. The Lux mark is the letters L and X; the other two are
    * glyphs. A lockup reading "Lux Lux Vote" is what this stops.
    */
-  it('never writes a name the mark already carries', () => {
-    expect(BRANDS.map((b) => b.word)).toEqual(['Vote', 'Zoo Vote', 'Hanzo Vote'])
+  /**
+   * The glyph beside the word is a shape and says nothing, so the word carries
+   * the estate and the app both. It was "Vote" beside a wordmark that spelled
+   * LUX; a glyph cannot spell anything, and a header reading "Vote" says which
+   * app and not whose.
+   */
+  it('says the estate and the app, because the glyph says neither', () => {
+    expect(BRANDS.map((b) => b.word)).toEqual(['Lux Vote', 'Zoo Vote', 'Hanzo Vote'])
+    for (const b of BRANDS) expect(b.word.startsWith(b.name)).toBe(true)
+  })
+
+  /** The header drops the leading half as a reader scrolls, so every tenant's
+   *  word has one to drop and lands on the app's own name. */
+  it('collapses to the app', () => {
+    for (const b of BRANDS) expect(b.word.split(' ').at(-1)).toBe('Vote')
   })
 })
 

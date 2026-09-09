@@ -91,7 +91,7 @@ export function Help() {
             </DialogDescription>
           </YStack>
           <YStack gap="$2">
-            <Link href="/deployment">What is deployed</Link>
+            <Link href="/deployment">Smart contracts</Link>
             <Link href="/gauges">Gauges</Link>
             <Link href="/settings">Settings</Link>
           </YStack>
