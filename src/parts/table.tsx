@@ -21,7 +21,16 @@ export interface Column<R> {
   width?: string
 }
 
-const wrap: CSSProperties = { width: '100%', overflowX: 'auto' }
+/**
+ * The track a table scrolls inside.
+ *
+ * `overflowX: auto` alone does not hold it. This sits in a flex column, and a
+ * flex item's `min-width` is `auto` — it refuses to shrink below its content —
+ * so the track grew to the table's intrinsic width and took the screen with it:
+ * six columns measured 531 inside a 390 glass. `minWidth: 0` is what lets a
+ * track be narrower than what it holds, which is the whole idea of a track.
+ */
+const wrap: CSSProperties = { width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'auto' }
 const table: CSSProperties = { width: '100%', borderCollapse: 'collapse', minWidth: 0 }
 const th: CSSProperties = {
   textAlign: 'left',

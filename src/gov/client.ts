@@ -63,7 +63,15 @@ export async function scan<T>(
 ): Promise<Read<T[]>> {
   return attempt(async () => {
     const out: T[] = []
-    for await (const w of windows(from, to)) out.push(...(await gather(w.from, w.to)))
+    // A floor above the head is a floor measured on a different chain. It is a
+    // saving — the block a contract was created in, so a scan need not walk
+    // from genesis — and a saving that skips the whole chain is not one: the
+    // walk yields no window, issues no call, and returns an empty result that
+    // reads as "this has never happened". That sentence is the one a register
+    // must never say wrongly, and a re-genesis under the floor is exactly when
+    // it would. A chain shorter than its own floor is short enough to walk.
+    for await (const w of windows(from > to ? 0n : from, to))
+      out.push(...(await gather(w.from, w.to)))
     return out
   })
 }

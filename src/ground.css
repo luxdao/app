@@ -155,6 +155,20 @@ button {
   color: inherit;
 }
 
+/* The floor a pressable thing cannot go under: WCAG 2.2 target size (minimum),
+   24 CSS pixels each way.
+   Scoped, and deliberately. Stated on every button it forced a nowrap row of
+   them wider than the glass — a floor is a minimum on the element and a demand
+   on whatever lays it out. The control that broke the rule came from a package
+   the app does not draw: the appearance picker's letter buttons measure 23.8.
+   So the reach is asked of that subtree, where a caller can grant it, and a
+   control this repository draws states its own height from `reach`. */
+[data-reach] button,
+[data-reach] [role="button"] {
+  min-inline-size: 24px;
+  min-block-size: 24px;
+}
+
 /* A reader who has asked for less motion is shown the two positions and not the
    turn between them. Stated once, on everything, rather than remembered at each
    place something moves. */

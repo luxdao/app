@@ -98,6 +98,9 @@ export function Connect() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      {/* Where the credential is going, said before it is typed. The word on the
+          control is short because a header is; the name a screen reader is given
+          is the whole sentence, and on this bundle it names three hosts. */}
       <Button
         size="$2"
         minHeight={CONTROL}
@@ -110,6 +113,7 @@ export function Connect() {
         hoverStyle={{ borderColor: plain, backgroundColor: surface }}
         focusVisibleStyle={ring}
         onPress={() => setOpen(true)}
+        aria-label={`Sign in with ${id.host(at.issuer)}`}
       >
         <SizableText size="$3" color={plain}>
           Sign in

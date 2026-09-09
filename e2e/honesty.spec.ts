@@ -56,10 +56,29 @@ test('the deployment survey distinguishes all four readings', async ({ page }) =
   await expect(page.getByText('no record', { exact: true }).first()).toBeVisible()
 })
 
-test('an empty register says nothing was created, not that nothing loaded', async ({ page }) => {
+test('a register says what it read, and an empty one says why it is empty', async ({ page }) => {
+  // Governance is deployed on 96369 and one proposal exists, so the register
+  // draws it. The sentence this test used to demand — "no proposal has ever
+  // been created" — was true of a chain nobody had used and became a lie the
+  // moment somebody did; the scan floor was measured on the chain before its
+  // re-genesis, so the walk began past the head, issued no call at all, and
+  // rendered an empty result as a fact about governance. What is asserted now
+  // is that the screen reports what it read: a row, or an emptiness it can
+  // account for. Never a refusal wearing either.
   await page.goto('/proposals')
   await expect(page.getByRole('heading', { level: 1, name: 'Proposals' })).toBeVisible()
-  await expect(page.getByText(/No proposal has ever been created/i)).toBeVisible({ timeout: 45_000 })
+  // Wait for the register itself, not for the word — the heading matches
+  // /proposal/ before a single block has been read, and a body scraped then is
+  // a body scraped mid-scan.
+  await expect(page.getByText(/\d+\s+proposals?\b|never been created/i).first()).toBeVisible({
+    timeout: 45_000,
+  })
+  const body = (await page.locator('body').innerText()).toLowerCase()
+  expect(body, 'a refusal must not read as an empty register').not.toMatch(/could not be read/)
+  expect(
+    /\d+\s+proposal/.test(body) || /never been created/.test(body),
+    'the register neither drew a row nor accounted for being empty',
+  ).toBe(true)
 })
 
 test('the standing note about custody is on every screen', async ({ page }) => {

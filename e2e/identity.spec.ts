@@ -81,7 +81,7 @@ test.describe('each site signs in at its own IAM', () => {
       await ready(page)
 
       // Where the credential is going, said before it is typed.
-      await expect(page.getByRole('button', { name: `Sign in with ${t.issuer}` })).toBeVisible()
+      await expect(page.getByRole('button', { name: `Sign in with ${t.issuer}` }).first()).toBeVisible()
     })
 
     test(`${t.host} still reads and still connects a wallet, signed out`, async ({ page }) => {
@@ -91,7 +91,7 @@ test.describe('each site signs in at its own IAM', () => {
 
       // Identity is IAM's; the wallet is a signer. Neither is a gate in front of
       // the page, and signing in is not a prerequisite for either.
-      await expect(page.getByRole('button', { name: 'Connect' })).toBeVisible()
+      await expect(page.getByRole('button', { name: /^Sign in with / })).toBeVisible()
       await expect(page.getByRole('button', { name: /^Chain:/ })).toBeVisible()
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     })
@@ -105,7 +105,10 @@ test.describe('each site signs in at its own IAM', () => {
       await page.goto(site(t.host))
       await ready(page)
 
-      await page.getByRole('button', { name: `Sign in with ${t.issuer}` }).click()
+      // One door, two ways in: connecting a wallet IS signing in, so the header
+      // carries a single control and the issuer is a row inside it.
+      await page.getByRole('button', { name: `Sign in with ${t.issuer}` }).first().click()
+      await page.getByRole('button', { name: `Sign in with ${t.issuer}` }).last().click()
       await page.waitForURL(/oauth\/authorize/)
 
       const url = new URL(page.url())

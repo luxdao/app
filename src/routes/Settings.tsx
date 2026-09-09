@@ -86,7 +86,13 @@ export default function Settings() {
         title="Appearance"
         note="The design system's own panel — type size, scale, spacing and width. Rendered rather than rebuilt: each control writes a custom property every ramp multiplies by, and a second set of controls over the same properties would be a second answer to a question that already has one."
       >
-        <Appearance />
+        {/* The picker is drawn by @hanzo/appearance and its letter buttons
+            measure 23.8 across, under the 24 a target needs. The floor is
+            granted here, on the subtree, because this is the caller and the
+            package is not ours to restyle. */}
+        <YStack data-reach="">
+          <Appearance />
+        </YStack>
       </Panel>
     </YStack>
   )
