@@ -2,7 +2,7 @@ import { Card, CardHeader } from '@hanzogui/card'
 import { YStack } from '@hanzogui/stacks'
 import { Heading, Paragraph } from '@hanzogui/text'
 import { useId, type ReactNode } from 'react'
-import { line, plain, quiet, surface } from './paint'
+import { CORNER, line, plain, quiet, surface } from './paint'
 
 /** A titled section. The heading is bound to the section it names. */
 export function Panel({
@@ -23,7 +23,7 @@ export function Panel({
       aria-labelledby={named}
       gap="$3"
       padding="$4"
-      borderRadius="$8"
+      borderRadius={CORNER}
       borderWidth={1}
       borderColor={line}
       backgroundColor={surface}

@@ -2,7 +2,7 @@ import { YStack } from '@hanzogui/stacks'
 import { Paragraph, SizableText } from '@hanzogui/text'
 import type { ReactNode } from 'react'
 import type { Read } from '../gov/read'
-import { bad, line, plain, quiet, surface } from './paint'
+import { CORNER, bad, line, plain, quiet, surface } from './paint'
 
 /**
  * What a screen says when it has no rows to draw.
@@ -21,7 +21,7 @@ export function Answer({ title, detail }: { title: string; detail?: ReactNode })
     <YStack
       gap="$2"
       padding="$4"
-      borderRadius="$6"
+      borderRadius={CORNER}
       borderWidth={1}
       borderColor={line}
       backgroundColor={surface}
@@ -60,7 +60,7 @@ export function Reading<T>({
 }) {
   if (of.at === 'reading') {
     return (
-      <YStack gap="$2" padding="$4" borderRadius="$6" borderWidth={1} borderColor={line}>
+      <YStack gap="$2" padding="$4" borderRadius={CORNER} borderWidth={1} borderColor={line}>
         <SizableText size="$3" color={quiet}>
           Reading {what}…
         </SizableText>
@@ -102,7 +102,7 @@ export function Reading<T>({
       <YStack
         gap="$2"
         padding="$4"
-        borderRadius="$6"
+        borderRadius={CORNER}
         borderWidth={1}
         borderColor={bad}
         backgroundColor={surface}

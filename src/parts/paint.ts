@@ -48,6 +48,16 @@ export const CONTROL = 40
 export const ROW = 44
 /** Where a line of prose stops being read at the published body size. */
 export const MEASURE = 620
+/**
+ * A card's corner, said once.
+ *
+ * Two shapes were drawing the same role: a Panel rounded at `$8` (22px) and the
+ * Answer boxes at `$6` (16px), side by side on the same screen. Nothing chose
+ * between them -- each was written where it was needed. One name, so the next
+ * card cannot pick a third.
+ */
+export const CORNER = '$6'
+
 /** The page column. */
 export const COLUMN = '72rem'
 /** Page horizontal padding. */

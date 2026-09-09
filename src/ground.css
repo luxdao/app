@@ -19,6 +19,25 @@ body {
   font-weight: var(--weight-normal);
 }
 
+/* A heading's line box has to fit the glyphs in it.
+
+   The ladder publishes a line height BELOW the size it pairs with -- an h1 sets
+   at 30.78px inside a 23.75px box -- which one line hides and two lines do not:
+   at phone widths the title wraps and the two lines close on each other.
+
+   It is stated here rather than as a prop because this engine is React-Native-Web
+   derived, and RNW appends `px` to a numeric style value whose property is not on
+   its unitless list. lineHeight is not on that list, so `lineHeight={1.15}`
+   compiles to `1.15px` -- a one-pixel line box holding 30px glyphs, which is the
+   same defect a size larger. A ratio can only be said safely in CSS, and this is
+   the stylesheet the document already keeps for the one rule that has nowhere
+   else to live. */
+main h1,
+main h2,
+main h3 {
+  line-height: 1.2;
+}
+
 /* A screen's own header at phone widths. A grid item's floor is its content, so
    a header holding one long unbreakable string can be wider than the column it
    sits in and take the document with it. */
