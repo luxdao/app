@@ -1,6 +1,6 @@
 {
   "name": "@luxdao/app",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Lux-Ecosystem-1.2",
