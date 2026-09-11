@@ -299,7 +299,7 @@ export const ve = [
   },
 ] as const
 
-/** GaugeController — vLUX-weighted fee direction. Gauge ids are 0-based. */
+/** GaugeController — veLUX-weighted fee direction. Gauge ids are 0-based. */
 export const gauges = [
   { type: 'function', name: 'gaugeCount', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'totalWeight', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },

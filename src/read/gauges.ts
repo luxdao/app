@@ -3,7 +3,7 @@ import type { Venue } from '../gov/chain'
 import { client, presence, reader } from '../gov/client'
 import { attempt, type Read } from '../gov/read'
 
-/** Gauges direct fees by vLUX weight. Ids are 0-based here, unlike roles and tasks. */
+/** Gauges direct fees by veLUX weight. Ids are 0-based here, unlike roles and tasks. */
 export interface Gauge {
   id: bigint
   recipient: string

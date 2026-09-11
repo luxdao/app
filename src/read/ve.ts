@@ -10,7 +10,7 @@ import { attempt, type Read } from '../gov/read'
  * This is the one place the interface reads an escrow, and it reads it through
  * an adapter rather than against a contract, because the same instrument has
  * more than one shape in the estate. `VOTES` binds the one `luxfi/standard`
- * ships — `VeVotes`, at the `vlux` slot, which is where the venue register
+ * ships — `VeVotes`, at the `ve` slot, which is where the venue register
  * points now that the Curve-style contract that stood there has been removed as
  * a duplicate.
  *
@@ -129,7 +129,7 @@ export interface Ve {
  * describe. The screen reads the step and says so rather than rounding up.
  */
 export const VOTES: Ve = {
-  where: (v) => presence(v, 'vlux'),
+  where: (v) => presence(v, 've'),
   abi: abi.ve,
   delegable: true,
   decays: true,

@@ -33,7 +33,7 @@ export interface Survey {
 }
 
 const ORDER: Slot[] = [
-  'governor', 'timelock', 'votes', 'karma', 'dlux', 'vlux', 'votingLux', 'gauges', 'bounty', 'roles', 'safe',
+  'governor', 'timelock', 'votes', 'karma', 'dlux', 've', 'votingLux', 'gauges', 'bounty', 'roles', 'safe',
 ]
 
 export async function survey(v: Venue): Promise<Survey> {

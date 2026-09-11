@@ -37,7 +37,7 @@ export type Slot =
   | 'votes'
   | 'karma'
   | 'dlux'
-  | 'vlux'
+  | 've'
   | 'votingLux'
   | 'gauges'
   | 'bounty'
@@ -91,7 +91,7 @@ export const VENUES: readonly Venue[] = [
       votes: '0x10192320Aea3444cf8e85EB617Ab47479Ea0e640',
       karma: '0x957d52850786db4D65e14DEf4F2B16A8A071c2cE',
       dlux: '0xc812C2A8E8032bf8d97E3E377F40A59Aa9cA298F',
-      vlux: '0x9aAB909D3e673CCBCfEacF96F96585B8e75bf1D9',
+      ve: '0x9aAB909D3e673CCBCfEacF96F96585B8e75bf1D9',
       votingLux: '0x160cD157d1f3A178d74962c28D71AdADb7AEDFcd',
       gauges: '0x7F17E6430A6ea24AF5472e89Fc86e93C4F57073b',
       // Zero bytes, and recorded so the screens can say so. This address did
@@ -157,7 +157,7 @@ export const VENUES: readonly Venue[] = [
     ? [
         loop('lux', 96372, 9860, lux, '0x90c538BB0448d14948c2b48a0F0C16efc3F0FA9a'),
         loop('zoo', 200203, 9870, zoo, '0x90c538BB0448d14948c2b48a0F0C16efc3F0FA9a'),
-        loop('hanzo', 36966, 9880, hanzo, '0xD235571A8ED990638699d87c1e7527F576C91aB7'),
+        loop('hanzo', 36966, 9880, hanzo, '0x90c538BB0448d14948c2b48a0F0C16efc3F0FA9a'),
       ]
     : []),
 ] as const
@@ -188,7 +188,7 @@ function loop(
       governor: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
       timelock: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
       votes: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-      vlux: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+      ve: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
       dlux: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
       votingLux: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
       karma: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
