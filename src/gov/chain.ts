@@ -149,42 +149,54 @@ export const VENUES: readonly Venue[] = [
     // the Safe infrastructure was recorded.
     at: { safe: '0xB68C73BAd0C967Ba6c9b6C0ae0D4A38138F474cb' },
   },
-  // A node on the machine running this, and only there. `import.meta.env.DEV` is
-  // replaced with a literal at build time, so this whole entry is removed from a
-  // production bundle rather than hidden by it: a chain nobody else can reach
-  // must not appear in the picker on a deployed site.
-  //
-  // The addresses are wherever `DeployGovernance` last put them on a fresh
-  // chain — they are deterministic for a given nonce order, not a registry, so
-  // re-deploying in a different order moves them and this needs re-reading.
+  // One node per tenant on the machine running this, and only there.
+  // `import.meta.env.DEV` is replaced with a literal at build time, so these
+  // entries are removed from a production bundle rather than hidden by it: a
+  // chain nobody else can reach must not appear on a deployed site.
   ...(import.meta.env.DEV
     ? [
-        {
-          id: 96368,
-          key: 'local' as const,
-          name: 'Lux local',
-          symbol: 'LUX',
-          rpc: 'http://127.0.0.1:9750/v1/chain/C/rpc',
-          explorer: null,
-          at: {
-            governor: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
-            timelock: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
-            votes: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-            // The DID registry, and the only place any record names one.
-            // `luxfi/standard` `deployments/local-anvil.json` puts it here on a
-            // chain that answers as 96369 at this loopback address, and no
-            // mainnet record names one at all — the four L2 devnet files record
-            // it as "(failed)" and osage records the gas limit that stopped it.
-            // The same address is AMMV2Router in the 96368 testnet record, which
-            // is the proof that it is a nonce, not a registry: the four mainnet
-            // venues above therefore carry no slot and the interface says no
-            // address is recorded rather than reading somebody else's contract.
-            didRegistry: '0xB0B3Df1E279D87e72738487Df8d7c0d7c2D1eFcE',
-          },
-        } satisfies Venue,
+        loop('lux', 96372, 9860, lux, '0x90c538BB0448d14948c2b48a0F0C16efc3F0FA9a'),
+        loop('zoo', 200203, 9870, zoo, '0x90c538BB0448d14948c2b48a0F0C16efc3F0FA9a'),
+        loop('hanzo', 36966, 9880, hanzo, '0xD235571A8ED990638699d87c1e7527F576C91aB7'),
       ]
     : []),
 ] as const
+
+/**
+ * A tenant's chain on this machine: `luxfi/standard` `script/localnet.sh up` runs
+ * the node, `script/deploy_gov_vote.sh` deploys governance into it, and
+ * `DeployWorkMarket` the work market after it. Every address is the deployer's
+ * nonce on a fresh chain. Governance sends the same transactions in the same
+ * order on every chain, so its addresses are shared; the work market lands after
+ * however many blocks the deploy had to wait for, so its bounty is per chain.
+ */
+function loop(
+  key: string,
+  id: number,
+  port: number,
+  brand: { name: string; symbol: string },
+  bounty: `0x${string}`,
+): Venue {
+  return {
+    id,
+    key: `local-${key}`,
+    name: `${brand.name} local`,
+    symbol: brand.symbol,
+    rpc: `http://127.0.0.1:${port}/v1/chain/C/rpc`,
+    explorer: null,
+    at: {
+      governor: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+      timelock: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+      votes: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+      vlux: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+      dlux: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+      votingLux: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
+      karma: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
+      gauges: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
+      bounty,
+    },
+  }
+}
 
 export const venue = (key: string): Venue | undefined => VENUES.find((v) => v.key === key)
 

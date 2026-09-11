@@ -2,18 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { VENUES, venue } from '../gov/chain'
 import { KINDS, dids, kind, resolve } from './id'
 
-const shipped = VENUES.filter((v) => v.key !== 'local')
+const shipped = VENUES.filter((v) => !v.key.startsWith('local-'))
 
 describe('where a DID registry is recorded', () => {
   /**
-   * One record names one, and it is the loopback node. `luxfi/standard`
-   * `deployments/local-anvil.json` puts a DIDRegistry at this address on a chain
-   * that answers as 96369 at 127.0.0.1; the four L2 devnet records say
-   * "(failed)"; no mainnet record names one at all.
+   * No chain this interface reads names one: the four L2 devnet records say
+   * "(failed)", no mainnet record names one, and the local governance deploy
+   * does not include one.
    */
-  it('is recorded on the local node and nowhere else', () => {
-    expect(venue('local')?.at.didRegistry).toBe('0xB0B3Df1E279D87e72738487Df8d7c0d7c2D1eFcE')
-    expect(shipped.filter((v) => v.at.didRegistry).map((v) => v.key)).toEqual([])
+  it('is recorded nowhere', () => {
+    expect(VENUES.filter((v) => v.at.didRegistry).map((v) => v.key)).toEqual([])
+    expect(venue('local-lux')?.at.didRegistry).toBeUndefined()
   })
 
   /**

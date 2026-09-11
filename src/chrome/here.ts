@@ -61,12 +61,12 @@ export const use = (): Venue => useSyncExternalStore(watch, here, here)
  * name — which is the failure the tenant/registry distinction exists to
  * prevent, and it was on the deployment screen and in the header picker.
  *
- * The loopback chain rides with it under `pnpm dev` for the same reason it is
- * in the registry: it is this tenant's chain on the machine reading it.
+ * The tenant's loopback chain rides with it under `pnpm dev`: it is this
+ * tenant's chain on the machine reading it, and no other tenant's.
  */
 export const roster = (): readonly Venue[] => {
   const mine = home()
-  return VENUES.filter((v) => v.key === mine.key || v.key === 'local')
+  return VENUES.filter((v) => v.key === mine.key || v.key === `local-${mine.key}`)
 }
 
 export { VENUES }

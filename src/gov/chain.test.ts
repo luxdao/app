@@ -8,7 +8,7 @@ import { VENUES, venue } from './chain'
  * what ships; the local entry is deliberately outside them, and reaches a
  * loopback address that no gateway sits in front of.
  */
-const shipped = VENUES.filter((v) => v.key !== 'local')
+const shipped = VENUES.filter((v) => !v.key.startsWith('local-'))
 
 describe('the chain registry', () => {
   it('carries the four chains this interface reads', () => {
