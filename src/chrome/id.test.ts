@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BRANDS } from './brand'
-import { client, config, did, host, linked, wallets } from './id'
+import { client, config, did, host, linked, wallets, was } from './id'
 
 describe('a tenant signs in at its own IAM', () => {
   /**
@@ -139,5 +139,48 @@ describe('the did claim', () => {
     expect(did('did:lux:')).toBeNull()
     expect(did('lux:z')).toBeNull()
     expect(did(42)).toBeNull()
+  })
+})
+
+/**
+ * The page a reader returns to after signing in is read from storage, which
+ * the page does not control. `history.replaceState` throws on a URL of another
+ * origin, and it throws inside the callback — so a stored `//elsewhere` would
+ * leave the reader on "completing sign-in" with a valid session in hand.
+ */
+describe('the page a sign-in returns to', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  const back = (stored: string | null) => {
+    let kept = stored
+    vi.stubGlobal('localStorage', {
+      getItem: () => kept,
+      removeItem: () => {
+        kept = null
+      },
+    })
+    return was('https://pars.vote')
+  }
+
+  it('returns to the page the reader was on', () => {
+    expect(back('/proposals/7?tab=votes#for')).toBe('/proposals/7?tab=votes#for')
+    expect(back('/')).toBe('/')
+  })
+
+  it('returns home when nothing was kept', () => {
+    expect(back(null)).toBe('/')
+    expect(back('')).toBe('/')
+  })
+
+  it('returns home for anything that leaves this origin', () => {
+    for (const away of ['//evil.example', '//evil.example/x', '/\\evil.example', '/\t/evil.example', 'https://evil.example/', 'javascript:alert(1)'])
+      expect(back(away)).toBe('/')
+  })
+
+  it('forgets the page once it has been read', () => {
+    let kept: string | null = '/treasury'
+    vi.stubGlobal('localStorage', { getItem: () => kept, removeItem: () => { kept = null } })
+    expect(was('https://pars.vote')).toBe('/treasury')
+    expect(kept).toBeNull()
   })
 })

@@ -93,12 +93,23 @@ const keep = (path: string) => {
   }
 }
 
-/** The remembered page, read once and forgotten. */
-export function was(): string {
+/**
+ * The remembered page, read once and forgotten — if it is a page of THIS site.
+ *
+ * Storage is not the page's to vouch for, so the value is resolved against the
+ * document's own origin and kept only if it stays there. A leading `/` is not
+ * enough: `//host`, `/\host` and `/<tab>/host` all begin with one and all name
+ * another origin once the URL parser has read them, and `history.replaceState`
+ * refuses a cross-origin URL by throwing — which would leave the reader on the
+ * callback's "completing sign-in" forever.
+ */
+export function was(origin: string = globalThis.location?.origin ?? ''): string {
   try {
     const path = localStorage.getItem(WAS)
     localStorage.removeItem(WAS)
-    return path && path.startsWith('/') ? path : '/'
+    if (!path?.startsWith('/')) return '/'
+    const at = new URL(path, origin)
+    return at.origin === origin ? `${at.pathname}${at.search}${at.hash}` : '/'
   } catch {
     return '/'
   }
