@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { VENUES, venue, type Venue } from '../gov/chain'
+import { VENUES, type Venue } from '../gov/chain'
 // The chain to open on is the TENANT's, not the registry's: lux.vote opens on
 // Lux and hanzo.vote on Hanzo, from one build.
 import { home } from './brand'
@@ -14,10 +14,15 @@ import { home } from './brand'
  */
 const KEY = 'vote.chain'
 
+/**
+ * The chain a reader last picked — if it is one this site reads. A stored key
+ * is only ever read against the roster: `vote.chain=lux` left in pars.vote's
+ * storage must open Pars, not put Lux's chain under Pars's name.
+ */
 function stored(): Venue {
   try {
     const k = localStorage.getItem(KEY)
-    return (k && venue(k)) || home()
+    return (k && roster().find((v) => v.key === k)) || home()
   } catch {
     return home()
   }
