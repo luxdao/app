@@ -10,3 +10,8 @@ playwright-report/
 # draws is read to know what a screen must hold, and nothing of it is kept here
 # — not a string, not a screenshot, not a route table.
 bin/reference/
+
+# Local symlinks to LLM.md
+CLAUDE.md
+AGENTS.md
+GEMINI.md
