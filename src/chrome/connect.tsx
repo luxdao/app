@@ -60,7 +60,9 @@ export function Connect() {
       const challenge = newChallenge({
         domain: window.location.host,
         uri: window.location.origin,
-        statement: 'Sign in to read and act on Lux governance.',
+        // The tenant's name, not the estate's: this message is what the wallet
+        // shows the reader, and on zoo.vote it has to say Zoo.
+        statement: `Sign in to read and act on ${at.name} governance.`,
       })
       const account = await connector.connect(w.id)
       await connector.signLogin(account, challenge)
@@ -152,7 +154,8 @@ export function Connect() {
           ) : found.length === 0 ? (
             <Paragraph size="$3" margin={0} color={quiet}>
               No wallet announced itself to this page. A browser wallet extension has to be
-              installed and enabled for this site.
+              installed and enabled for this site; connecting a phone wallet by QR code is not
+              offered here.
             </Paragraph>
           ) : (
             <YStack gap="$2">

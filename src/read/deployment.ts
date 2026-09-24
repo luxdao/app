@@ -36,6 +36,23 @@ const ORDER: Slot[] = [
   'governor', 'timelock', 'votes', 'karma', 'dlux', 've', 'votingLux', 'gauges', 'bounty', 'roles', 'safe',
 ]
 
+/**
+ * The contracts any DAO has a place for, and so a row on every chain even when
+ * no record names one.
+ *
+ * The rest — `dlux`, `votingLux` — are one estate's own tokens. A "no record"
+ * row for them on another tenant's chain puts that estate's names on this
+ * site, so they appear only where the chain records them. An allowlist rather
+ * than a list of exceptions: a slot added for one estate stays off the others
+ * until somebody decides it belongs.
+ */
+const COMMON: ReadonlySet<Slot> = new Set([
+  'governor', 'timelock', 'votes', 'karma', 've', 'gauges', 'bounty', 'roles', 'safe',
+])
+
+/** The rows a chain's survey has, in order. */
+export const rows = (v: Venue): Slot[] => ORDER.filter((slot) => COMMON.has(slot) || v.at[slot] !== undefined)
+
 export async function survey(v: Venue): Promise<Survey> {
   const c = client(v)
   const reach = await attempt(async () => ({
@@ -47,12 +64,12 @@ export async function survey(v: Venue): Promise<Survey> {
     return {
       venue: v, chainId: null, block: null, reachable: false,
       why: reach.at === 'failed' ? reach.why : 'unreachable',
-      slots: ORDER.map((slot) => ({ slot, address: v.at[slot] ?? null, size: null, why: 'chain unreachable' })),
+      slots: rows(v).map((slot) => ({ slot, address: v.at[slot] ?? null, size: null, why: 'chain unreachable' })),
     }
   }
 
   const slots = await Promise.all(
-    ORDER.map(async (slot): Promise<Slotted> => {
+    rows(v).map(async (slot): Promise<Slotted> => {
       const address = v.at[slot] ?? null
       if (!address) return { slot, address: null, size: null, why: 'no address on record' }
       const p = await presence(v, slot)
