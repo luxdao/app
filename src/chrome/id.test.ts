@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { BRANDS } from './brand'
+import { TENANTS } from '../tenants'
 import { client, config, did, host, linked, wallets, was } from './id'
 
 describe('a tenant signs in at its own IAM', () => {
@@ -9,7 +9,7 @@ describe('a tenant signs in at its own IAM', () => {
    * into it. The values are the estate's, from `hanzo/cloud/brand`.
    */
   it('names one issuer per tenant', () => {
-    expect(BRANDS.map((b) => [b.key, b.issuer])).toEqual([
+    expect(TENANTS.map((b) => [b.key, b.issuer])).toEqual([
       ['lux', 'https://lux.id'],
       ['zoo', 'https://zoolabs.id'],
       ['hanzo', 'https://hanzo.id'],
@@ -18,16 +18,16 @@ describe('a tenant signs in at its own IAM', () => {
 
   /** An issuer is compared as a literal string, so a trailing slash is a different issuer. */
   it('records every issuer as an origin, with nothing after it', () => {
-    for (const b of BRANDS) expect(b.issuer).toMatch(/^https:\/\/[a-z.]+$/)
+    for (const b of TENANTS) expect(b.issuer).toMatch(/^https:\/\/[a-z.]+$/)
   })
 
   /** `<org>-<app>`, HIP-0111, derived from the tenant rather than listed beside it. */
   it('derives the client id from the tenant', () => {
-    expect(BRANDS.map((b) => client(b))).toEqual(['lux-vote', 'zoo-vote', 'hanzo-vote'])
+    expect(TENANTS.map((b) => client(b))).toEqual(['lux-vote', 'zoo-vote', 'hanzo-vote'])
   })
 
   it('says which host a credential is going to', () => {
-    expect(BRANDS.map((b) => host(b.issuer))).toEqual(['lux.id', 'zoolabs.id', 'hanzo.id'])
+    expect(TENANTS.map((b) => host(b.issuer))).toEqual(['lux.id', 'zoolabs.id', 'hanzo.id'])
   })
 
   /**
@@ -37,7 +37,7 @@ describe('a tenant signs in at its own IAM', () => {
    * endpoint, before anybody types anything.
    */
   it('asks to be returned to the callback this app is registered for', () => {
-    for (const b of BRANDS) {
+    for (const b of TENANTS) {
       const c = config(b, `https://${b.key}.vote`)
       expect(c.serverUrl).toBe(b.issuer)
       expect(c.clientId).toBe(`${b.key}-vote`)
@@ -48,7 +48,7 @@ describe('a tenant signs in at its own IAM', () => {
 
   /** No secret, because a browser cannot keep one. PKCE is what proves the client. */
   it('carries no client secret', () => {
-    expect(config(BRANDS[0]!, 'https://lux.vote')).not.toHaveProperty('clientSecret')
+    expect(config(TENANTS[0]!, 'https://lux.vote')).not.toHaveProperty('clientSecret')
   })
 })
 

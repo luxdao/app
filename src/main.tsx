@@ -6,9 +6,10 @@ import { IamProvider } from '@hanzo/iam/react'
 import { gui } from './chrome/gui'
 import App from './App'
 import { Returning } from './chrome/account'
-import { brand } from './chrome/brand'
+import { add, brand } from './chrome/brand'
 import * as id from './chrome/id'
 import * as theme from './chrome/theme'
+import { TENANTS } from './tenants'
 // The type ramp the design system multiplies. `@hanzo/design` publishes
 // `--text-*` as a calc against `--type-scale`; without it every size falls back
 // to a frozen literal and the scale stops being adjustable.
@@ -24,13 +25,19 @@ import '@hanzo/ui/styles/motion.css'
 import './ground.css'
 
 /**
+ * The sites this build serves, registered before anything reads which one it
+ * is. Here and only here: the screens and the chrome name no tenant, which is
+ * what keeps these three out of a bundle built by a fork.
+ */
+add(...TENANTS)
+
+/**
  * The tenant's IAM, read once.
  *
  * Outside the component because the SDK instance is keyed on this object's
  * fields: rebuilding it on a render would rebuild the engine and drop the
- * session with it. It is also the last honest moment to read the tenant — a
- * fork registers its own before anything renders, and `brand()` below is
- * already the first read.
+ * session with it. It is also the first read of the tenant, so it comes after
+ * the registration above.
  */
 const iam = id.config()
 

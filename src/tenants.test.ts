@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { VENUES, venue } from './chain'
+import { TENANTS } from './tenants'
 
 /**
- * The venues a build ships with. A node on this machine is compiled in under
- * `import.meta.env.DEV`, which is true here, so the registry seen by a test is
- * one entry longer than the one seen by a reader. Every claim below is about
- * what ships; the local entry is deliberately outside them, and reaches a
- * loopback address that no gateway sits in front of.
+ * The chains the stack's sites ship with. A node on this machine is declared
+ * under `import.meta.env.DEV`, which is true here, so a test also sees each
+ * tenant's `local` chain. Every claim below is about what ships; the local
+ * chains are deliberately outside them, and reach a loopback address that no
+ * gateway sits in front of.
  */
-const shipped = VENUES.filter((v) => !v.key.startsWith('local-'))
+const shipped = TENANTS.map((b) => b.venue)
 
-describe('the chain registry', () => {
-  it('carries the four chains this interface reads', () => {
-    expect(shipped.map((v) => v.id).sort((a, b) => a - b)).toEqual([36963, 96369, 200200, 494949])
+describe('the chains the three sites read', () => {
+  it('is one chain per site', () => {
+    expect(shipped.map((v) => v.id)).toEqual([96369, 200200, 36963])
   })
 
   /**
@@ -27,22 +27,13 @@ describe('the chain registry', () => {
     // is gone from every validator, so a build still asking for it reaches
     // nothing — this is where that would be caught. The chain letter is either
     // case: luxd aliases both, and the estate writes it either way.
-    //
-    // What the rest of the pattern guards is the path form against the bare
-    // host, which is the difference between a readable response and a CORS
-    // refusal.
     for (const v of shipped)
       expect(v.rpc).toMatch(/^https:\/\/api\.[a-z-]+\.network\/v1\/chain\/[Cc]\/rpc$/)
   })
 
-  it('finds a chain by key and reports nothing for one it does not have', () => {
-    expect(venue('lux')?.id).toBe(96369)
-    expect(venue('ethereum')).toBeUndefined()
-  })
-
   /** An address recorded twice under one slot would make two screens disagree. */
   it('records each address at most once per chain', () => {
-    for (const v of VENUES) {
+    for (const v of [...shipped, ...TENANTS.flatMap((b) => (b.local ? [b.local] : []))]) {
       const at = Object.values(v.at).map((a) => a.toLowerCase())
       expect(new Set(at).size).toBe(at.length)
     }

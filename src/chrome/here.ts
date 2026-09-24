@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
-import { VENUES, type Venue } from '../gov/chain'
-// The chain to open on is the TENANT's, not the registry's: lux.vote opens on
-// Lux and hanzo.vote on Hanzo, from one build.
-import { home } from './brand'
+import type { Venue } from '../gov/chain'
+// The chain to open on is the TENANT's: lux.vote opens on Lux and hanzo.vote on
+// Hanzo, from one build.
+import { brand, home } from './brand'
 
 /**
  * Which chain the interface is reading.
@@ -58,20 +58,16 @@ export const use = (): Venue => useSyncExternalStore(watch, here, here)
 /**
  * The chains this SITE reads, which is the tenant's own and no other.
  *
- * `VENUES` in `gov/chain.ts` is the registry: every chain this codebase knows
- * how to read. It is not a menu. lux.vote is Lux's governance and shows Lux's
- * chain, its figures and its mark; Zoo's chain belongs on zoo.vote, where Zoo's
- * mark and Zoo's word are. A site that lists four brands tells a reader they
- * are somewhere shared, and puts another network's addresses under this one's
- * name — which is the failure the tenant/registry distinction exists to
- * prevent, and it was on the deployment screen and in the header picker.
+ * lux.vote is Lux's governance and shows Lux's chain, its figures and its mark;
+ * Zoo's chain belongs on zoo.vote, where Zoo's mark and Zoo's word are. A site
+ * that lists four brands tells a reader they are somewhere shared, and puts
+ * another network's addresses under this one's name. So the list is read off
+ * the tenant, which declares its chain and nobody else's.
  *
  * The tenant's loopback chain rides with it under `pnpm dev`: it is this
  * tenant's chain on the machine reading it, and no other tenant's.
  */
 export const roster = (): readonly Venue[] => {
-  const mine = home()
-  return VENUES.filter((v) => v.key === mine.key || v.key === `local-${mine.key}`)
+  const { venue, local } = brand()
+  return local ? [venue, local] : [venue]
 }
-
-export { VENUES }

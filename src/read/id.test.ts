@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { VENUES, venue } from '../gov/chain'
+import { TENANTS } from '../tenants'
 import { KINDS, dids, kind, resolve } from './id'
 
-const shipped = VENUES.filter((v) => !v.key.startsWith('local-'))
+const shipped = TENANTS.map((b) => b.venue)
 
 describe('where a DID registry is recorded', () => {
   /**
@@ -11,8 +11,8 @@ describe('where a DID registry is recorded', () => {
    * does not include one.
    */
   it('is recorded nowhere', () => {
-    expect(VENUES.filter((v) => v.at.didRegistry).map((v) => v.key)).toEqual([])
-    expect(venue('local-lux')?.at.didRegistry).toBeUndefined()
+    expect(shipped.filter((v) => v.at.didRegistry).map((v) => v.key)).toEqual([])
+    for (const b of TENANTS) expect(b.local?.at.didRegistry).toBeUndefined()
   })
 
   /**

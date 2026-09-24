@@ -33,8 +33,8 @@ test.describe('no screen carries a figure nobody measured', () => {
 })
 
 test('the picker offers this site\'s own chain and no other estate\'s', async ({ page }) => {
-  // One site is one tenant. The registry in gov/chain.ts knows four chains;
-  // this site reads its own. A picker listing Zoo, Pars and Hanzo on lux.vote
+  // One site is one tenant, and a tenant declares one chain: this site reads
+  // its own. A picker listing Zoo, Pars and Hanzo on lux.vote
   // told a reader they were somewhere shared and put another network's
   // addresses under this one's mark — which is what `roster()` ended.
   await page.goto('/work')

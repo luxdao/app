@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { VENUES } from '../gov/chain'
+import { TENANTS } from '../tenants'
 import { rows } from './deployment'
+
+const VENUES = TENANTS.flatMap((b) => (b.local ? [b.venue, b.local] : [b.venue]))
 
 describe('deployment rows', () => {
   it('names no other estate\'s token on a chain that records none', () => {
